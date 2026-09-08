@@ -1,23 +1,24 @@
-# Drug Design Agent v2 — Requirements
-# 核心推理依赖
-torch>=2.0.0
-transformers>=4.30.0
+# Core GPU inference. The RunPod image already provides a compatible CUDA build.
+torch>=2.0,<3
+transformers>=4.30,<5
 regex
-numpy
-pandas
-rdkit-pypi  # or rdkit (conda: conda install -c conda-forge rdkit)
-scipy
+numpy>=1.24,<2
+pandas>=1.5,<3
+scipy>=1.10,<2
 
-# 对接依赖（可选，运行 Vina Smoke Test 需要）
-# vina          # pip install vina  (AutoDock Vina Python bindings)
-# meeko         # pip install meeko (PDBQT 配体准备)
+# Molecular property evaluation and AutoDock Vina Python workflow.
+rdkit-pypi==2022.9.5
+vina>=1.2.5,<2
+meeko>=0.5,<1
+gemmi>=0.6,<1
 
-# API 依赖（后续 Agent API 开发使用）
-fastapi
-uvicorn[standard]
-pydantic
+# FastAPI service.
+fastapi>=0.100,<1
+uvicorn[standard]>=0.22,<1
+pydantic>=2,<3
+python-dotenv>=1,<2
 
-# 其他
+# Utilities used by evaluation and scripts.
 tqdm
 scikit-learn
 matplotlib

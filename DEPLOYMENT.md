@@ -1,5 +1,7 @@
 # Deployment and External Model Mounting
 
+RunPod GPU Pod 的完整部署流程见 [`RUNPOD_DEPLOYMENT.md`](RUNPOD_DEPLOYMENT.md)。
+
 本公开版本只提供代码和轻量配置，不包含模型权重。Vercel 适合托管前端；FastAPI、ESM-2、DLPS-E2PO、RDKit 和 AutoDock Vina 应运行在带 GPU 的后端环境中。
 
 ## 部署拓扑

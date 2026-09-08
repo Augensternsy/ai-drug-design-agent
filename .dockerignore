@@ -3,6 +3,7 @@
 .env
 .env.*
 !.env.example
+!.env.runpod.example
 
 __pycache__/
 *.py[cod]
@@ -43,4 +44,3 @@ temp/
 Thumbs.db
 .vscode/
 .idea/
-

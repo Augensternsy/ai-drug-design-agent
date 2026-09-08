@@ -1,44 +1,45 @@
-# Multi-stage GPU-enabled Dockerfile for Drug Design Agent Backend
-FROM nvidia/cuda:11.8.0-runtime-ubuntu22.04
+# RunPod-compatible CUDA/PyTorch image for the FastAPI GPU backend.
+FROM runpod/pytorch:2.1.0-py3.10-cuda11.8.0-devel-ubuntu22.04
 
-# Avoid prompt during package installation
-ENV DEBIAN_FRONTEND=noninteractive
-ENV PYTHONUNBUFFERED=1
-ENV PATH="/opt/venv/bin:$PATH"
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    APP_DIR=/app \
+    RUNPOD_SKIP_INSTALL=1 \
+    DEVICE=cuda \
+    INFERENCE_MODE=local \
+    MODEL_PATH=/workspace/models/e2po/direct_ki_e2po_15k.pt \
+    E2PO_CHECKPOINT=/workspace/models/e2po/direct_ki_e2po_15k.pt \
+    ESM_MODEL_PATH=/workspace/models/esm2 \
+    TOKENIZER_PATH=/workspace/models/tokenizer \
+    BERT_CONFIG_PATH=/workspace/models/bert-base-uncased \
+    TARGET_DATA_PATH=/workspace/data/targets/fasta \
+    STRUCTURE_DATA_PATH=/workspace/data/structures \
+    DEMO_DATA_PATH=/workspace/data/demo \
+    HOST=0.0.0.0 \
+    PORT=8000
 
-# Install system dependencies & Python
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3.10 \
-    python3.10-venv \
-    python3-pip \
-    libxrender1 \
-    libxext6 \
-    build-essential \
     curl \
     git \
-    autodock-vina \
+    libxext6 \
+    libxrender1 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Create virtualenv
-RUN python3.10 -m venv /opt/venv
+COPY requirements.txt ./requirements.txt
+RUN python -m pip install --upgrade pip && \
+    python -m pip install -r requirements.txt
 
-# Install Python requirements
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
-# Copy application source code & data
+# Model weights and data are deliberately not copied into the image.
 COPY app ./app
 COPY source_backup ./source_backup
-COPY data ./data
-COPY demo_data ./demo_data
 COPY scripts ./scripts
-COPY .env.example .env
+COPY .env.runpod.example ./.env.runpod.example
 
-# Expose FastAPI default port
+RUN mkdir -p /workspace/models /workspace/data /workspace/logs /app/outputs
+
 EXPOSE 8000
 
-# Default launch command
-CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["bash", "scripts/runpod_bootstrap.sh"]

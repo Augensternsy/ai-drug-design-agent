@@ -23,6 +23,12 @@ INFERENCE_MODE = os.getenv("INFERENCE_MODE", "local")
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8000"))
 
+# Generation defaults used by generation_service.py.
+DEFAULT_NUM_SAMPLES = int(os.getenv("DEFAULT_NUM_SAMPLES", "3"))
+DEFAULT_BATCH_SIZE = int(os.getenv("DEFAULT_BATCH_SIZE", "50"))
+DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "e2po")
+RANDOM_SEED = int(os.getenv("RANDOM_SEED", "42"))
+
 # ============================================================
 # Model & Tokenizer Paths
 # ============================================================

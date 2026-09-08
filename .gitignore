@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.runpod.example
 *.pem
 *.key
 *.p12
@@ -77,4 +78,3 @@ dist/
 .DS_Store
 Thumbs.db
 Desktop.ini
-
