@@ -1,0 +1,80 @@
+# Sensitive configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+
+# Model weights and large serialized artifacts
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.safetensors
+*.h5
+*.ot
+*.onnx
+*.msgpack
+*.tflite
+*.mlmodel
+*.mlpackage/
+
+# Data skeleton: keep only directory documentation
+data/targets/*
+!data/targets/README.md
+data/structures/*
+!data/structures/README.md
+data/precomputed/*
+!data/precomputed/README.md
+data/references/*
+!data/references/README.md
+
+# Outputs, logs and caches
+outputs/
+logs/
+cache/
+caches/
+.cache/
+tmp/
+temp/
+*.log
+*.tmp
+
+# Temporary docking files
+**/docking_tmp/
+**/docking_temp/
+**/vina_tmp/
+**/vina_work/
+*_out.pdbqt
+*_pose*.pdbqt
+*_docked*.pdbqt
+*.dlg
+
+# Python bytecode, environments and tooling
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+htmlcov/
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
