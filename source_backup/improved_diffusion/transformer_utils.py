@@ -48,10 +48,13 @@ from transformers.modeling_outputs import (
 )
 from transformers.modeling_utils import (
     PreTrainedModel,
-    apply_chunking_to_forward,
     find_pruneable_heads_and_indices,
     prune_linear_layer,
 )
+try:
+    from transformers.pytorch_utils import apply_chunking_to_forward
+except ImportError:
+    from transformers.modeling_utils import apply_chunking_to_forward
 from transformers.utils import logging
 from transformers.models.bert.configuration_bert import BertConfig
 
@@ -447,4 +450,3 @@ class BertAttention(nn.Module):
         # print(self_outputs.shape, attention_output.shape, 'output of BertAttention')
         # outputs = (attention_output,) + self_outputs[1:]  # add attentions if we output them
         return attention_output
-
