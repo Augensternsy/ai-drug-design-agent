@@ -3,6 +3,7 @@
 .env.*
 !.env.example
 !.env.runpod.example
+!.env.modal.example
 *.pem
 *.key
 *.p12
@@ -22,6 +23,9 @@ secrets/
 *.tflite
 *.mlmodel
 *.mlpackage/
+*.tar
+*.tar.gz
+*.tgz
 
 # Data skeleton: keep only directory documentation
 data/targets/*
