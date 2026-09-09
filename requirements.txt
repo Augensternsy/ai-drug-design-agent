@@ -1,6 +1,6 @@
 # Core GPU inference. The RunPod image already provides a compatible CUDA build.
 torch>=2.0,<3
-transformers>=4.30,<5
+transformers==4.30.2
 regex
 numpy>=1.24,<2
 pandas>=1.5,<3
