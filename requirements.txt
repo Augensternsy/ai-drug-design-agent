@@ -9,7 +9,7 @@ scipy>=1.10,<2
 # Molecular property evaluation and AutoDock Vina Python workflow.
 rdkit-pypi==2022.9.5
 vina>=1.2.5,<2
-meeko>=0.5,<1
+meeko==0.5.0
 gemmi>=0.6,<1
 
 # FastAPI service.

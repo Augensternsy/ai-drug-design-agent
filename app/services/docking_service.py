@@ -17,6 +17,7 @@ Pipeline:
 """
 
 import os
+import logging
 import numpy as np
 from typing import Optional
 
@@ -25,6 +26,8 @@ from app.config import (
     VINA_EXHAUSTIVENESS, VINA_N_POSES, VINA_BOX_PADDING,
 )
 from app.services.target_service import TargetRegistry
+
+logger = logging.getLogger(__name__)
 
 # Optional imports — graceful degradation
 try:
@@ -35,11 +38,14 @@ except ImportError:
     VINA_AVAILABLE = False
 
 try:
-    from meeko import MoleculePreparation
+    from meeko import MoleculePreparation, PDBQTWriterLegacy
     MEEKO_AVAILABLE = True
-except ImportError:
+    MEEKO_IMPORT_ERROR = None
+except ImportError as exc:
     MoleculePreparation = None
+    PDBQTWriterLegacy = None
     MEEKO_AVAILABLE = False
+    MEEKO_IMPORT_ERROR = exc
 
 
 def is_docking_available() -> bool:
@@ -79,7 +85,7 @@ def prepare_ligand_pdbqt(smiles: str) -> Optional[str]:
     SMILES → 3D conformer → PDBQT string via Meeko。
     """
     if not MEEKO_AVAILABLE:
-        raise ImportError("meeko is required: pip install meeko")
+        raise ImportError(f"meeko is required: {MEEKO_IMPORT_ERROR}")
 
     from rdkit import Chem
     from rdkit.Chem import AllChem
@@ -99,9 +105,22 @@ def prepare_ligand_pdbqt(smiles: str) -> Optional[str]:
 
     try:
         preparator = MoleculePreparation()
-        preparator.prepare(mol)
-        return preparator.write_pdbqt_string()
-    except Exception:
+        mol_setups = preparator.prepare(mol)
+        if not mol_setups:
+            raise RuntimeError("Meeko returned no molecule setup")
+
+        pdbqt_string, success, error_msg = PDBQTWriterLegacy.write_string(mol_setups[0])
+        if not success:
+            raise RuntimeError(f"Meeko PDBQT writer failed: {error_msg.strip()}")
+        if not pdbqt_string.strip():
+            raise RuntimeError("Meeko returned an empty PDBQT string")
+        return pdbqt_string
+    except Exception as exc:
+        logger.exception(
+            "Ligand PDBQT preparation failed for SMILES %s: %s",
+            smiles,
+            exc,
+        )
         return None
 
 
@@ -139,6 +158,11 @@ def dock_single(
 
     pdbqt_str = prepare_ligand_pdbqt(smiles)
     if not pdbqt_str:
+        result["error"] = "Ligand PDBQT preparation failed; see task logs"
+        logger.error(
+            "Vina docking skipped because ligand PDBQT preparation failed: %s",
+            smiles,
+        )
         return result
 
     try:
@@ -151,7 +175,8 @@ def dock_single(
         result["vina_score"] = float(score)
         result["success"] = True
     except Exception as e:
-        result["error"] = str(e)
+        result["error"] = f"{type(e).__name__}: {e}"
+        logger.exception("Vina docking failed for SMILES %s: %s", smiles, e)
 
     return result
 
