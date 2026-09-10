@@ -1,38 +1,72 @@
-"""
-Async Task Service — Manages generation tasks, auto-retry for valid molecules, and background execution lifecycle.
-"""
-import os
-import uuid
+"""Async task lifecycle built from reusable Agent Tool wrappers."""
+
+from __future__ import annotations
+
 import asyncio
 import logging
-from typing import Dict, Optional, List, Any
-from pathlib import Path
+import uuid
+from typing import Any, Dict, List, Optional
 
-from app.schemas.api_models import TaskStatusResponse, CandidateMolecule, GenerateRequest
-from app.services.target_service import TargetRegistry
-from app.services.eval_service import evaluate_smiles
-from app.services.docking_service import is_docking_available, dock_molecules, get_receptor_path, get_ligand_ref_path, compute_docking_box
-from app.config import INFERENCE_MODE, DEMO_DATA_DIR
+from app.agent.tools import (
+    attach_molecular_assets,
+    evaluate_properties,
+    generate_molecules,
+    molecular_docking,
+    rank_candidates,
+    resolve_target,
+    summarize_results,
+)
+from app.schemas.api_models import (
+    AgentPlan,
+    CandidateMolecule,
+    GenerateRequest,
+    TaskStatusResponse,
+)
 
 logger = logging.getLogger(__name__)
 
-# Global in-memory task store
 _TASKS: Dict[str, Dict[str, Any]] = {}
+TOOL_ORDER = [
+    "resolve_target",
+    "generate_molecules",
+    "evaluate_properties",
+    "molecular_docking",
+    "rank_candidates",
+    "generate_result_summary",
+]
+
+
+def _new_tool_trace(run_docking: bool) -> list[dict[str, str | None]]:
+    return [
+        {
+            "name": name,
+            "status": "pending" if name != "molecular_docking" or run_docking else "skipped",
+            "detail": None,
+        }
+        for name in TOOL_ORDER
+    ]
 
 
 class TaskService:
-    """Service to create, query, and run asynchronous molecule generation tasks."""
+    """Create, query, and execute molecule-generation tasks in memory."""
 
     @staticmethod
-    def create_task(req: GenerateRequest, background_tasks: Any = None) -> str:
+    def create_task(
+        req: GenerateRequest,
+        background_tasks: Any = None,
+        agent_plan: AgentPlan | None = None,
+        client_key: str | None = None,
+    ) -> str:
+        target = resolve_target(req.target)
         task_id = str(uuid.uuid4())
         _TASKS[task_id] = {
             "task_id": task_id,
-            "target": req.target.upper(),
+            "target": target,
             "num_samples": req.num_samples,
             "qed_threshold": req.qed_threshold,
             "sa_threshold": req.sa_threshold,
             "run_docking": req.run_docking,
+            "dock_top_k": req.dock_top_k,
             "status": "queued",
             "progress": 0.0,
             "current_stage": "Task queued",
@@ -41,199 +75,179 @@ class TaskService:
             "generated": 0,
             "valid": 0,
             "returned": 0,
-            "candidates": []
+            "candidates": [],
+            "requested_by_agent": agent_plan is not None,
+            "agent_plan": agent_plan,
+            "tool_trace": _new_tool_trace(req.run_docking),
+            "summary": None,
+            "client_key": client_key,
         }
+        TaskService._set_tool(task_id, "resolve_target", "completed", target)
         if background_tasks is not None:
             background_tasks.add_task(TaskService._run_generation_task_sync, task_id)
         else:
             try:
-                loop = asyncio.get_running_loop()
-                loop.create_task(TaskService._run_generation_task(task_id))
+                asyncio.get_running_loop().create_task(TaskService._run_generation_task(task_id))
             except RuntimeError:
                 import threading
-                threading.Thread(target=lambda: asyncio.run(TaskService._run_generation_task(task_id)), daemon=True).start()
+
+                threading.Thread(
+                    target=lambda: asyncio.run(TaskService._run_generation_task(task_id)),
+                    daemon=True,
+                ).start()
         return task_id
 
     @staticmethod
-    def _run_generation_task_sync(task_id: str):
+    def _set_tool(task_id: str, name: str, status: str, detail: str | None = None) -> None:
+        task = _TASKS.get(task_id)
+        if not task:
+            return
+        for tool in task["tool_trace"]:
+            if tool["name"] == name:
+                tool["status"] = status
+                tool["detail"] = detail
+                return
+
+    @staticmethod
+    def _run_generation_task_sync(task_id: str) -> None:
         asyncio.run(TaskService._run_generation_task(task_id))
 
     @staticmethod
     def get_task(task_id: str) -> Optional[TaskStatusResponse]:
-        if task_id not in _TASKS:
+        task = _TASKS.get(task_id)
+        if task is None:
             return None
-        t = _TASKS[task_id]
         return TaskStatusResponse(
-            task_id=t["task_id"],
-            target=t["target"],
-            status=t["status"],
-            progress=t["progress"],
-            current_stage=t["current_stage"],
-            error=t["error"],
-            num_samples=t["num_samples"],
-            requested=t.get("requested", t["num_samples"]),
-            generated=t.get("generated", 0),
-            valid=t.get("valid", 0),
-            returned=t.get("returned", len(t.get("candidates", []))),
-            candidates=t["candidates"]
+            task_id=task["task_id"],
+            target=task["target"],
+            status=task["status"],
+            progress=task["progress"],
+            current_stage=task["current_stage"],
+            error=task["error"],
+            num_samples=task["num_samples"],
+            requested=task.get("requested", task["num_samples"]),
+            generated=task.get("generated", 0),
+            valid=task.get("valid", 0),
+            returned=task.get("returned", len(task.get("candidates", []))),
+            candidates=task["candidates"],
+            requested_by_agent=task.get("requested_by_agent", False),
+            agent_plan=task.get("agent_plan"),
+            tool_trace=task.get("tool_trace", []),
+            summary=task.get("summary"),
         )
 
     @staticmethod
-    async def _run_generation_task(task_id: str):
-        t = _TASKS.get(task_id)
-        if not t:
+    async def _run_generation_task(task_id: str) -> None:
+        task = _TASKS.get(task_id)
+        if not task:
             return
 
-        target = t["target"]
-        num_samples = t["num_samples"]
-        run_docking = t["run_docking"]
+        target = task["target"]
+        num_samples = task["num_samples"]
+        run_docking = task["run_docking"]
+        active_tool: str | None = None
 
         try:
-            # Stage 1: Loading
-            t["status"] = "loading"
-            t["progress"] = 10.0
-            t["current_stage"] = f"Loading model and sequence for target {target}..."
-            await asyncio.sleep(0.5)
+            task.update(status="loading", progress=10.0, current_stage=f"Loading model and sequence for target {target}...")
+            await asyncio.sleep(0)
+            task.update(status="encoding", progress=25.0, current_stage="Encoding protein sequence with ESM-2...")
 
-            # Stage 2: Encoding
-            t["status"] = "encoding"
-            t["progress"] = 25.0
-            t["current_stage"] = f"Encoding protein sequence with ESM-2..."
-            await asyncio.sleep(0.5)
-
-            # Stage 3 & 4: Generating & Evaluating with Auto-Retry for RDKit Valid molecules
-            t["status"] = "generating"
-            t["progress"] = 40.0
-            t["current_stage"] = f"Generating candidate molecules for target {target}..."
+            active_tool = "generate_molecules"
+            TaskService._set_tool(task_id, active_tool, "running")
+            task.update(status="generating", progress=40.0, current_stage=f"Generating candidate molecules for target {target}...")
 
             valid_candidates: List[CandidateMolecule] = []
             total_generated = 0
-            max_attempts = 3
-            attempt = 0
-
-            while len(valid_candidates) < num_samples and attempt < max_attempts:
-                attempt += 1
+            for attempt in range(1, 4):
+                if len(valid_candidates) >= num_samples:
+                    break
                 needed = num_samples - len(valid_candidates)
-                batch_to_gen = max(needed, 2) if attempt > 1 else num_samples
-
-                if INFERENCE_MODE.lower() == "demo":
-                    batch_smiles = TaskService._load_demo_smiles(target, batch_to_gen)
-                    await asyncio.sleep(0.5)
-                else:
-                    from app.services.model_service import generate_molecules_for_target
-                    batch_smiles = await asyncio.to_thread(
-                        generate_molecules_for_target, target, batch_to_gen
-                    )
-
+                batch_size = max(needed, 2) if attempt > 1 else num_samples
+                batch_smiles = await asyncio.to_thread(generate_molecules, target, batch_size)
                 total_generated += len(batch_smiles)
+                TaskService._set_tool(task_id, "generate_molecules", "completed", f"Generated {total_generated} raw samples")
 
+                active_tool = "evaluate_properties"
+                TaskService._set_tool(task_id, active_tool, "running")
+                task.update(status="evaluating", progress=65.0, current_stage="Evaluating RDKit validity and molecular properties...")
                 for smiles in batch_smiles:
-                    eval_res = evaluate_smiles(smiles)
-                    # STRICT RULE: RDKit Invalid molecules MUST NOT enter final candidates
-                    if not eval_res["valid"]:
+                    evaluation = evaluate_properties(smiles)
+                    if not evaluation["valid"]:
                         continue
-
-                    if t["qed_threshold"] and (eval_res["qed"] or 0) < t["qed_threshold"]:
+                    if task["qed_threshold"] is not None and (evaluation["qed"] or 0) < task["qed_threshold"]:
                         continue
-                    if t["sa_threshold"] and (eval_res["sa"] or 10) > t["sa_threshold"]:
+                    if task["sa_threshold"] is not None and (evaluation["sa"] or 10) > task["sa_threshold"]:
                         continue
-
-                    # Avoid duplicate SMILES
-                    if any(c.smiles == smiles for c in valid_candidates):
+                    if any(item.smiles == smiles for item in valid_candidates):
                         continue
-
-                    candidate = CandidateMolecule(
+                    valid_candidates.append(CandidateMolecule(
                         rank=len(valid_candidates) + 1,
                         smiles=smiles,
                         valid=True,
-                        qed=eval_res.get("qed"),
-                        sa=eval_res.get("sa"),
-                        molwt=eval_res.get("molwt"),
-                        logp=eval_res.get("logp"),
-                        lipinski=eval_res.get("lipinski"),
-                        vina=None
-                    )
-                    valid_candidates.append(candidate)
+                        qed=evaluation.get("qed"),
+                        sa=evaluation.get("sa"),
+                        molwt=evaluation.get("molwt"),
+                        logp=evaluation.get("logp"),
+                        lipinski=evaluation.get("lipinski"),
+                    ))
                     if len(valid_candidates) >= num_samples:
                         break
 
-            evaluated_candidates = valid_candidates[:num_samples]
-            t["generated"] = total_generated
-            t["valid"] = len(evaluated_candidates)
+            evaluated = valid_candidates[:num_samples]
+            task["generated"] = total_generated
+            task["valid"] = len(evaluated)
+            TaskService._set_tool(task_id, "evaluate_properties", "completed", f"{len(evaluated)} RDKit-valid candidates retained")
 
-            # Stage 5: Docking (optional, ONLY valid molecules allowed)
-            if run_docking and is_docking_available() and evaluated_candidates:
-                t["status"] = "docking"
-                t["progress"] = 80.0
-                t["current_stage"] = f"Performing AutoDock Vina molecular docking..."
-
-                receptor_path = TargetRegistry.get_receptor_path(target)
-                ref_ligand = TargetRegistry.get_reference_ligand_path(target)
-
-                if receptor_path and ref_ligand:
-                    center, box_size = compute_docking_box(str(ref_ligand))
-                    valid_smiles = [c.smiles for c in evaluated_candidates]
-
-                    dock_results = await asyncio.to_thread(
-                        dock_molecules, valid_smiles, str(receptor_path), center, box_size
+            docking_error: str | None = None
+            if run_docking and evaluated:
+                active_tool = "molecular_docking"
+                TaskService._set_tool(task_id, active_tool, "running")
+                task.update(status="docking", progress=80.0, current_stage="Performing AutoDock Vina molecular docking...")
+                dock_candidates = sorted(evaluated, key=lambda item: item.qed if item.qed is not None else -1.0, reverse=True)
+                if task["dock_top_k"]:
+                    dock_candidates = dock_candidates[: task["dock_top_k"]]
+                try:
+                    dock_results = await asyncio.to_thread(molecular_docking, target, [item.smiles for item in dock_candidates])
+                    dock_map = {result["smiles"]: result.get("vina_score") for result in dock_results}
+                    errors = [result.get("error") for result in dock_results if not result.get("success") and result.get("error")]
+                    for candidate in evaluated:
+                        candidate.vina = dock_map.get(candidate.smiles)
+                    docking_error = "; ".join(errors) if errors else None
+                    TaskService._set_tool(
+                        task_id,
+                        "molecular_docking",
+                        "completed" if any(item.vina is not None for item in evaluated) else "failed",
+                        docking_error or f"Docked {len(dock_candidates)} candidate(s)",
                     )
-                    dock_map = {res["smiles"]: res.get("vina_score") for res in dock_results}
+                except Exception as exc:
+                    docking_error = f"{type(exc).__name__}: {exc}"
+                    logger.exception("Docking tool failed for task %s", task_id)
+                    TaskService._set_tool(task_id, "molecular_docking", "failed", docking_error)
 
-                    for cand in evaluated_candidates:
-                        if cand.smiles in dock_map:
-                            cand.vina = dock_map[cand.smiles]
+            active_tool = "rank_candidates"
+            TaskService._set_tool(task_id, active_tool, "running")
+            task.update(status="ranking", progress=92.0, current_stage="Ranking candidates and preparing molecular views...")
+            ranked = rank_candidates(evaluated, run_docking)
+            for candidate in ranked:
+                await asyncio.to_thread(attach_molecular_assets, candidate)
+            TaskService._set_tool(task_id, "rank_candidates", "completed")
 
-            # Stage 6: Ranking
-            t["status"] = "ranking"
-            t["progress"] = 95.0
-            t["current_stage"] = f"Ranking candidate molecules..."
-
-            if run_docking:
-                evaluated_candidates.sort(key=lambda c: (c.vina if c.vina is not None else 999.0))
-            else:
-                evaluated_candidates.sort(key=lambda c: (c.qed if c.qed is not None else -1.0), reverse=True)
-
-            for rank, cand in enumerate(evaluated_candidates, start=1):
-                cand.rank = rank
-
-            # Stage 7: Completed
-            t["candidates"] = evaluated_candidates
-            t["returned"] = len(evaluated_candidates)
-            t["status"] = "completed"
-            t["progress"] = 100.0
-            t["current_stage"] = f"Generation and evaluation completed successfully! ({len(evaluated_candidates)} valid candidates returned)"
-
-        except Exception as e:
-            logger.exception(f"Task {task_id} failed with error")
-            t["status"] = "failed"
-            t["progress"] = 100.0
-            t["current_stage"] = f"Task failed"
-            t["error"] = str(e)
-
-    @staticmethod
-    def _load_demo_smiles(target: str, num_samples: int) -> List[str]:
-        """Load real pre-generated SMILES from demo_data directory."""
-        demo_csv = Path(DEMO_DATA_DIR) / f"generated_{target}.csv"
-        if not demo_csv.exists():
-            demo_csv = Path(DEMO_DATA_DIR) / "generated_ESR1.csv"
-
-        smiles_list = []
-        if demo_csv.exists():
-            import csv
-            with open(demo_csv, "r") as f:
-                reader = csv.reader(f)
-                header = next(reader, None)
-                for row in reader:
-                    if row and row[0] != "INVALID":
-                        smiles_list.append(row[0])
-                        if len(smiles_list) >= num_samples:
-                            break
-
-        if not smiles_list:
-            smiles_list = [
-                "COc1ccc(C(=O)OC[C@H]2CC[C@H](NS(=O)(=O)c3cccc(OC)n3)CC2)cc1",
-                "CNC(=O)c1ccc2cc(NC)nc(Nc3cccc(Cl)c3C(N)=O)c2n1",
-                "CN1CC(NC(=O)c2cc(-c3cccnc3CC(F)(F)F)nc(N)n2)C1"
-            ][:num_samples]
-
-        return smiles_list
+            active_tool = "generate_result_summary"
+            TaskService._set_tool(task_id, active_tool, "running")
+            summary = summarize_results(target, ranked, run_docking)
+            if docking_error:
+                summary += f" 对接提示：{docking_error}"
+            task.update(
+                candidates=ranked,
+                returned=len(ranked),
+                summary=summary,
+                status="completed",
+                progress=100.0,
+                current_stage=f"Completed with {len(ranked)} valid candidate(s).",
+            )
+            TaskService._set_tool(task_id, "generate_result_summary", "completed")
+        except Exception as exc:
+            logger.exception("Task %s failed", task_id)
+            task.update(status="failed", progress=100.0, current_stage="Task failed", error=f"{type(exc).__name__}: {exc}")
+            if active_tool:
+                TaskService._set_tool(task_id, active_tool, "failed", str(exc))

@@ -1,7 +1,7 @@
 """
 API Request and Response Pydantic Schemas for FastAPI Backend.
 """
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Literal
 from pydantic import BaseModel, Field
 
 
@@ -32,10 +32,11 @@ class TargetListResponse(BaseModel):
 
 class GenerateRequest(BaseModel):
     target: str = Field("ESR1", description="Target protein name (e.g. ESR1, JAK1, FTO)")
-    num_samples: int = Field(3, ge=1, le=100, description="Number of candidate molecules to generate")
-    qed_threshold: Optional[float] = Field(None, description="Minimum QED threshold for filtering")
-    sa_threshold: Optional[float] = Field(None, description="Maximum Synthetic Accessibility score threshold")
+    num_samples: int = Field(3, ge=1, le=5, description="Number of candidate molecules to generate (public demo maximum: 5)")
+    qed_threshold: Optional[float] = Field(None, ge=0.0, le=1.0, description="Minimum QED threshold for filtering")
+    sa_threshold: Optional[float] = Field(None, ge=1.0, le=10.0, description="Maximum Synthetic Accessibility score threshold")
     run_docking: bool = Field(False, description="Whether to run AutoDock Vina docking for candidates")
+    dock_top_k: Optional[int] = Field(None, ge=1, le=5, description="Optionally dock only the top K candidates by QED")
 
 
 class GenerateResponse(BaseModel):
@@ -54,6 +55,36 @@ class CandidateMolecule(BaseModel):
     logp: Optional[float] = None
     lipinski: Optional[bool] = None
     vina: Optional[float] = None
+    structure_svg: Optional[str] = None
+    sdf: Optional[str] = None
+
+
+class AgentPlan(BaseModel):
+    target: str
+    num_samples: int = Field(ge=1, le=5)
+    qed_threshold: Optional[float] = Field(None, ge=0.0, le=1.0)
+    sa_threshold: Optional[float] = Field(None, ge=1.0, le=10.0)
+    qed_priority: bool = True
+    run_docking: bool = False
+    dock_top_k: Optional[int] = Field(None, ge=1, le=5)
+    parser: Literal["rules", "llm"] = "rules"
+
+
+class AgentGenerateRequest(BaseModel):
+    prompt: str = Field(..., min_length=3, max_length=500)
+
+
+class AgentGenerateResponse(BaseModel):
+    task_id: str
+    status: str = "queued"
+    message: str
+    plan: AgentPlan
+
+
+class ToolExecution(BaseModel):
+    name: str
+    status: Literal["pending", "running", "completed", "skipped", "failed"]
+    detail: Optional[str] = None
 
 
 class TaskStatusResponse(BaseModel):
@@ -68,4 +99,8 @@ class TaskStatusResponse(BaseModel):
     generated: int = 0
     valid: int = 0
     returned: int = 0
-    candidates: List[CandidateMolecule] = []
+    candidates: List[CandidateMolecule] = Field(default_factory=list)
+    requested_by_agent: bool = False
+    agent_plan: Optional[AgentPlan] = None
+    tool_trace: List[ToolExecution] = Field(default_factory=list)
+    summary: Optional[str] = None

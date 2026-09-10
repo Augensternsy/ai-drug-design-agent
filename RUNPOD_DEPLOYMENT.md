@@ -125,6 +125,11 @@ grep -E 'SAMPLING_STEPS = 200|CLAMP_MODE = "none"' app/config.py
 
 Do not commit `.env`.
 
+The natural-language Agent uses its deterministic rules parser by default. To
+enable an OpenAI-compatible LLM parser, set `LLM_PROVIDER`, `LLM_API_BASE_URL`,
+`LLM_MODEL`, and `LLM_API_KEY` only in the Pod's private `.env`. Never copy the
+key into a frontend `VITE_*` variable.
+
 ## 6. Install dependencies and start FastAPI
 
 The bootstrap script validates the volume, NVIDIA GPU, CUDA-enabled PyTorch, ESM-2 dependencies, RDKit, Vina and Meeko before starting Uvicorn:

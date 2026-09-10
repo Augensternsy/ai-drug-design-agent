@@ -27,6 +27,7 @@ try:
         QED, Descriptors, AllChem, Lipinski,
         rdFingerprintGenerator, rdMolDescriptors,
     )
+    from rdkit.Chem.Draw import rdMolDraw2D
     from rdkit.ML.Cluster import Butina
     RDLogger.DisableLog("rdApp.*")
     RDKIT_AVAILABLE = True
@@ -387,3 +388,31 @@ def smiles_to_sdf(smiles: str, output_path: str, seed: int = 42) -> bool:
         return True
     except Exception:
         return False
+
+
+def smiles_to_2d_svg(smiles: str, width: int = 520, height: int = 320) -> Optional[str]:
+    """Return a self-contained RDKit 2D SVG, or None for an invalid molecule."""
+    mol = mol_from_smiles(smiles)
+    if mol is None:
+        return None
+    try:
+        AllChem.Compute2DCoords(mol)
+        drawer = rdMolDraw2D.MolDraw2DSVG(width, height)
+        drawer.drawOptions().clearBackground = False
+        rdMolDraw2D.PrepareAndDrawMolecule(drawer, mol)
+        drawer.FinishDrawing()
+        return drawer.GetDrawingText()
+    except Exception:
+        return None
+
+
+def smiles_to_sdf_block(smiles: str, seed: int = 42) -> Optional[str]:
+    """Return one 3D SDF record for browser viewing and download."""
+    mol = generate_3d_conformer(smiles, seed=seed)
+    if mol is None:
+        return None
+    try:
+        mol.SetProp("_Name", "DLPS-E2PO candidate")
+        return f"{Chem.MolToMolBlock(mol)}\n$$$$\n"
+    except Exception:
+        return None

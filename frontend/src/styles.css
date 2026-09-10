@@ -199,3 +199,115 @@ footer { margin: 0 clamp(22px, 5vw, 76px); padding: 24px 0 34px; display: flex; 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation-duration: .01ms !important; }
 }
+
+/* Agent workspace and public-demo controls */
+.header-actions { display: flex; align-items: center; gap: 10px; }
+.history-trigger { height: 35px; padding: 0 13px; border: 1px solid var(--line); border-radius: 99px; background: var(--paper); color: var(--ink); font: 500 10px "DM Mono", monospace; }
+.history-trigger span { margin-left: 5px; color: var(--green); }
+.system-badge.demo span { background: var(--orange); box-shadow: 0 0 0 4px rgba(238,139,83,.13); }
+.history-panel { position: absolute; z-index: 20; top: 70px; right: clamp(22px, 5vw, 76px); width: min(390px, calc(100vw - 32px)); max-height: 440px; overflow: auto; padding: 14px; border: 1px solid var(--line); background: var(--paper); box-shadow: 0 20px 60px rgba(31,48,39,.18); }
+.history-panel__header { padding: 5px 4px 13px; display: flex; align-items: center; justify-content: space-between; }
+.history-panel__header strong { font-size: 13px; }
+.history-panel__header button { border: 0; background: transparent; color: var(--muted); font-size: 10px; }
+.history-item { width: 100%; padding: 13px 11px; display: flex; justify-content: space-between; align-items: center; gap: 14px; border: 0; border-top: 1px solid var(--line); background: transparent; color: var(--ink); text-align: left; }
+.history-item:hover { background: rgba(200,245,92,.1); }
+.history-item strong, .history-item small { display: block; }
+.history-item small, .history-item > span:last-child, .history-panel > p { color: var(--muted); font: 400 9px "DM Mono", monospace; }
+.history-item small { margin-top: 4px; }
+
+.agent-workspace { margin-bottom: 18px; border: 1px solid var(--line); background: var(--paper); }
+.mode-tabs { display: grid; grid-template-columns: 1fr 1fr; }
+.mode-tabs button { min-height: 48px; border: 0; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background: #f5f4ee; color: var(--muted); font: 500 10px "DM Mono", monospace; letter-spacing: .06em; text-transform: uppercase; }
+.mode-tabs button:last-child { border-right: 0; }
+.mode-tabs button.active { border-bottom-color: var(--paper); background: var(--paper); color: var(--green); }
+.agent-prompt { padding: clamp(24px, 3vw, 38px); }
+.agent-prompt label { margin-bottom: 12px; display: flex; justify-content: space-between; gap: 12px; }
+.agent-prompt label span { font-size: 13px; font-weight: 700; }
+.agent-prompt label small { color: var(--muted); font: 400 9px "DM Mono", monospace; }
+.agent-prompt textarea { width: 100%; resize: vertical; padding: 16px; border: 1px solid var(--line); border-radius: 3px; background: #fff; color: var(--ink); font-size: 13px; line-height: 1.75; }
+.agent-prompt__footer { margin-top: 12px; display: flex; justify-content: space-between; align-items: center; }
+.agent-prompt__footer span { color: var(--muted); font: 400 9px "DM Mono", monospace; }
+.agent-prompt__footer button, .primary-button { min-height: 43px; padding: 0 20px; border: 0; border-radius: 3px; background: var(--ink); color: #fff; font-weight: 700; }
+.agent-prompt__footer button:not(:disabled):hover, .primary-button:hover { background: var(--green); }
+.workspace-grid.agent-mode { grid-template-columns: 1fr; }
+.workspace-grid.agent-mode .status-panel { grid-column: 1 / -1; }
+
+.threshold-grid { margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.threshold-grid label span { margin-bottom: 7px; display: block; color: var(--muted); font: 500 9px "DM Mono", monospace; text-transform: uppercase; }
+.threshold-grid input { width: 100%; height: 45px; padding: 0 12px; border: 1px solid var(--line); border-radius: 3px; background: #fff; }
+
+.tool-trace { margin: 24px 0; padding: 18px; border: 1px solid var(--line); background: #f7f6f0; }
+.tool-trace h3 { margin: 0 0 13px; font: 500 10px "DM Mono", monospace; letter-spacing: .1em; text-transform: uppercase; }
+.tool-trace ul { margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; list-style: none; }
+.tool-trace li { min-width: 0; display: flex; gap: 8px; align-items: flex-start; color: var(--muted); }
+.tool-trace li > span { width: 20px; height: 20px; flex: 0 0 auto; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; font: 500 9px "DM Mono", monospace; }
+.tool-trace li strong, .tool-trace li small { display: block; }
+.tool-trace li strong { font-size: 9px; }
+.tool-trace li small { margin-top: 3px; overflow-wrap: anywhere; font-size: 8px; line-height: 1.4; }
+.tool-trace li.completed { color: var(--green); }
+.tool-trace li.completed > span { border-color: var(--green); background: var(--green); color: #fff; }
+.tool-trace li.running { color: var(--ink); }
+.tool-trace li.running > span { border-color: var(--orange); box-shadow: 0 0 0 4px rgba(238,139,83,.12); }
+.tool-trace li.failed { color: #a4422d; }
+.result-summary { margin: 17px 0 0; padding: 14px 16px; border-left: 3px solid var(--green); background: #edf4e9; color: #365346; font-size: 11px; line-height: 1.7; }
+.error-message small { opacity: .78; }
+
+/* Candidate cards, molecular views, and exports */
+.results-header { align-items: center; }
+.result-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.result-actions > span { margin-right: 8px; color: var(--muted); font: 500 9px "DM Mono", monospace; text-transform: uppercase; }
+.result-actions button, .card-actions button, .molecule-view-tabs button, .secondary-button { min-height: 35px; padding: 0 12px; border: 1px solid var(--line); border-radius: 3px; background: #fff; color: var(--ink); font-size: 10px; }
+.result-actions button:hover, .card-actions button:hover, .molecule-view-tabs button:hover, .secondary-button:hover { border-color: var(--green); color: var(--green); }
+.molecule-grid { padding: clamp(18px, 3vw, 34px); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.molecule-card { min-width: 0; overflow: hidden; border: 1px solid var(--line); background: #fff; box-shadow: 0 10px 30px rgba(31,48,39,.04); }
+.molecule-card__header { min-height: 56px; padding: 13px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+.molecule-card__header > div { display: flex; align-items: center; gap: 10px; }
+.molecule-card__header strong { font-size: 12px; }
+.molecule-view-tabs { padding: 10px 12px 0; display: flex; gap: 7px; }
+.molecule-view-tabs button { min-height: 31px; background: #f5f4ee; }
+.molecule-view-tabs button.active { border-color: var(--green); background: var(--green); color: #fff; }
+.molecule-canvas { height: 280px; margin: 12px; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--line); background: var(--paper); }
+.molecule-canvas img { width: 100%; height: 100%; object-fit: contain; }
+.molecule-canvas > p { color: var(--muted); font-size: 10px; }
+.molecule-viewer-3d { width: 100%; height: 100%; position: relative; }
+.metric-grid { margin: 0; padding: 0 15px 14px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.metric-grid div { min-width: 0; padding: 9px 7px; background: #f5f4ee; }
+.metric-grid dt { color: var(--muted); font: 500 8px "DM Mono", monospace; text-transform: uppercase; }
+.metric-grid dd { margin: 5px 0 0; overflow-wrap: anywhere; font: 500 10px "DM Mono", monospace; }
+.metric-grid .vina-score { font-size: 9px; }
+.smiles-block { margin: 0 15px; padding: 12px; border: 1px solid var(--line); background: #f8f8f4; }
+.smiles-block span { display: block; margin-bottom: 7px; color: var(--muted); font: 500 8px "DM Mono", monospace; }
+.smiles-block code { display: block; overflow-wrap: anywhere; word-break: break-word; font-size: 10px; line-height: 1.65; user-select: all; }
+.card-actions { padding: 12px 15px 15px; display: flex; gap: 8px; }
+
+/* Submission confirmation */
+.dialog-backdrop { position: fixed; z-index: 100; inset: 0; padding: 20px; display: grid; place-items: center; background: rgba(20,41,31,.62); }
+.confirm-dialog { width: min(520px, 100%); padding: clamp(25px, 4vw, 38px); border: 1px solid var(--line); background: var(--paper); box-shadow: 0 30px 90px rgba(0,0,0,.28); }
+.confirm-dialog h2 { margin: 0; font-size: 25px; }
+.confirm-dialog > p:not(.eyebrow) { padding: 13px; background: #f5f4ee; color: var(--ink); font-size: 12px; line-height: 1.65; overflow-wrap: anywhere; }
+.confirm-dialog ul { padding-left: 18px; color: var(--muted); font-size: 11px; line-height: 1.8; }
+.confirm-dialog > div { margin-top: 24px; display: flex; justify-content: flex-end; gap: 9px; }
+.secondary-button, .primary-button { min-height: 42px; }
+
+@media (max-width: 960px) {
+  .molecule-grid { grid-template-columns: 1fr; }
+  .tool-trace ul { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .header-actions { gap: 6px; }
+  .history-trigger { padding: 0 10px; }
+  .system-badge { padding: 7px 10px; }
+  .agent-prompt label { flex-direction: column; }
+  .threshold-grid { grid-template-columns: 1fr; }
+  .tool-trace ul { grid-template-columns: 1fr; }
+  .results-header { align-items: flex-start; }
+  .result-actions { justify-content: flex-start; }
+  .molecule-grid { padding: 0; }
+  .molecule-card { box-shadow: 0 12px 35px rgba(31,48,39,.05); }
+  .molecule-canvas { height: 240px; }
+  .metric-grid { grid-template-columns: repeat(2, 1fr); }
+  .metric-grid div:last-child { grid-column: 1 / -1; }
+  .card-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .confirm-dialog > div { display: grid; grid-template-columns: 1fr 1fr; }
+}

@@ -29,6 +29,20 @@ DEFAULT_BATCH_SIZE = int(os.getenv("DEFAULT_BATCH_SIZE", "50"))
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "e2po")
 RANDOM_SEED = int(os.getenv("RANDOM_SEED", "42"))
 
+# Public demo guardrails. These limits are enforced again by the API layer.
+MAX_NUM_SAMPLES = min(5, max(1, int(os.getenv("MAX_NUM_SAMPLES", "5"))))
+REQUEST_COOLDOWN_SECONDS = max(
+    0.0, float(os.getenv("REQUEST_COOLDOWN_SECONDS", "15"))
+)
+
+# Optional OpenAI-compatible LLM parser. The deterministic rules parser remains
+# available when no key is configured, so the Agent never depends on a secret.
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "none").strip().lower()
+LLM_API_BASE_URL = os.getenv("LLM_API_BASE_URL", "").rstrip("/")
+LLM_API_KEY = os.getenv("LLM_API_KEY", "")
+LLM_MODEL = os.getenv("LLM_MODEL", "")
+LLM_TIMEOUT_SECONDS = max(1.0, float(os.getenv("LLM_TIMEOUT_SECONDS", "10")))
+
 # ============================================================
 # Model & Tokenizer Paths
 # ============================================================

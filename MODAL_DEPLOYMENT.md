@@ -104,6 +104,22 @@ $env:MODAL_SCALEDOWN_WINDOW = '300'
 
 Do not override the fixed checkpoint, sampling steps, or clamp mode.
 
+The natural-language Agent works without an LLM key through its deterministic
+rules parser. To enable an OpenAI-compatible provider, create a Modal Secret
+without placing credentials in Git or Vercel:
+
+```powershell
+py -m modal secret create ai-drug-design-agent-llm `
+  LLM_PROVIDER=openai_compatible `
+  LLM_API_BASE_URL=https://your-provider.example/v1 `
+  LLM_MODEL=your-model-name `
+  LLM_API_KEY=your-private-key
+$env:MODAL_LLM_SECRET_NAME = 'ai-drug-design-agent-llm'
+```
+
+If `MODAL_LLM_SECRET_NAME` is not set, deployment remains fully functional with
+the rules parser. Never configure `LLM_API_KEY` as a `VITE_*` variable.
+
 ## 5. Deploy the FastAPI endpoint
 
 This is the first step that creates the serverless GPU deployment:
