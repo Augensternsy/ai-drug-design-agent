@@ -26,6 +26,18 @@ const STAGE_LABELS: Record<DisplayStage, string> = {
   completed: "生成完成",
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  queued: "任务已进入队列",
+  loading: "正在加载模型",
+  encoding: "正在编码靶点",
+  generating: "正在生成分子",
+  evaluating: "正在评估性质",
+  docking: "正在执行 Vina 对接",
+  ranking: "正在排序候选分子",
+  completed: "任务已完成",
+  failed: "任务执行失败",
+};
+
 type Candidate = {
   rank: number;
   smiles: string;
@@ -106,6 +118,7 @@ function App() {
   const running = submitting || (!!taskId && task?.status !== "completed" && task?.status !== "failed");
   const activeStage = displayStageFor(task?.status ?? "queued", submittedWithDocking);
   const activeStageIndex = DISPLAY_STAGES.indexOf(activeStage);
+  const taskState = task?.status === "failed" ? "failed" : task?.status === "completed" ? "complete" : "running";
 
   const visibleStages = useMemo(
     () => (submittedWithDocking ? DISPLAY_STAGES : DISPLAY_STAGES.filter((stage) => stage !== "docking")),
@@ -220,34 +233,37 @@ function App() {
 
             <label className="field-label" htmlFor="target">蛋白靶点</label>
             <div className="select-wrap">
-              <select id="target" value={target} onChange={(event) => setTarget(event.target.value)} disabled={running}>
+              <select id="target" value={target} onChange={(event) => setTarget(event.target.value)} disabled={running} aria-describedby="target-hint">
                 {TARGETS.map(([name, pdb]) => <option value={name} key={name}>{name} · PDB {pdb}</option>)}
               </select>
             </div>
+            <p className="field-hint" id="target-hint">支持 12 个靶点，括号内为用于对接的 PDB 结构编号。</p>
 
             <label className="field-label" htmlFor="count">生成数量</label>
             <div className="number-control">
               <button type="button" onClick={() => setCount((value) => Math.max(1, value - 1))} disabled={running || count <= 1} aria-label="减少生成数量">−</button>
-              <input id="count" type="number" min="1" max="100" value={count} onChange={(event) => setCount(Math.min(100, Math.max(1, Number(event.target.value) || 1)))} disabled={running} />
+              <input id="count" type="number" min="1" max="100" value={count} onChange={(event) => setCount(Math.min(100, Math.max(1, Number(event.target.value) || 1)))} disabled={running} aria-describedby="count-hint" />
               <button type="button" onClick={() => setCount((value) => Math.min(100, value + 1))} disabled={running || count >= 100} aria-label="增加生成数量">+</button>
             </div>
+            <p className="field-hint" id="count-hint">数量越多，GPU 推理与对接所需时间越长；建议先从 1 个开始。</p>
 
-            <label className="toggle-row">
+            <label className="toggle-row" htmlFor="run-docking">
               <span>
                 <strong>AutoDock Vina</strong>
-                <small>为有效分子执行真实对接评分</small>
+                <small>为 RDKit 有效分子执行真实对接评分，任务耗时会增加</small>
               </span>
-              <input type="checkbox" checked={runDocking} onChange={(event) => setRunDocking(event.target.checked)} disabled={running} />
+              <input id="run-docking" type="checkbox" checked={runDocking} onChange={(event) => setRunDocking(event.target.checked)} disabled={running} />
               <i aria-hidden="true" />
             </label>
 
-            <button className="submit-button" type="submit" disabled={running || !API_BASE_URL}>
+            <button className="submit-button" type="submit" disabled={running || !API_BASE_URL} aria-describedby="submit-hint">
               {running ? <><span className="spinner" />任务执行中</> : <>开始生成 <span>→</span></>}
             </button>
+            <p className="submit-hint" id="submit-hint">提交后请保持页面开启，前端会持续轮询同一个任务。</p>
             {!API_BASE_URL && <p className="config-warning">请先配置 VITE_API_BASE_URL。</p>}
           </form>
 
-          <section className="status-panel" aria-live="polite">
+          <section className="status-panel" aria-live="polite" aria-busy={running}>
             <div className="section-heading">
               <div><span>02</span><h2>任务进度</h2></div>
               {taskId && <code>{taskId.slice(0, 8)}</code>}
@@ -261,11 +277,20 @@ function App() {
               </div>
             ) : (
               <div className="task-state">
+                <div className={`live-status ${taskState}`} role="status">
+                  <span className="live-status-dot" aria-hidden="true" />
+                  <div>
+                    <strong>{STATUS_LABELS[task.status] ?? task.status}</strong>
+                    <small>{task.target} · {submittedWithDocking ? "RDKit + Vina" : "RDKit evaluation"}</small>
+                  </div>
+                </div>
                 <div className="progress-meta">
                   <span>{task.current_stage}</span>
                   <strong>{Math.round(task.progress)}%</strong>
                 </div>
-                <div className="progress-track"><div style={{ width: `${task.progress}%` }} /></div>
+                <div className="progress-track" role="progressbar" aria-label="任务完成进度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(task.progress)}>
+                  <div style={{ width: `${task.progress}%` }} />
+                </div>
                 <ol className="stage-list">
                   {visibleStages.map((stage) => {
                     const canonicalIndex = DISPLAY_STAGES.indexOf(stage);
@@ -302,18 +327,19 @@ function App() {
           {task?.candidates.length ? (
             <div className="table-wrap">
               <table>
+                <caption className="sr-only">候选分子的排名与 RDKit、AutoDock Vina 评价指标</caption>
                 <thead><tr><th>Rank</th><th>SMILES</th><th>QED</th><th>SA</th><th>MolWt</th><th>LogP</th><th>Lipinski</th><th>Vina score</th></tr></thead>
                 <tbody>
                   {task.candidates.map((candidate) => (
                     <tr key={`${candidate.rank}-${candidate.smiles}`}>
-                      <td><span className="rank">#{candidate.rank}</span></td>
-                      <td><code className="smiles">{candidate.smiles}</code></td>
-                      <td>{formatMetric(candidate.qed)}</td>
-                      <td>{formatMetric(candidate.sa)}</td>
-                      <td>{formatMetric(candidate.molwt, 1)}</td>
-                      <td>{formatMetric(candidate.logp, 2)}</td>
-                      <td><span className={`pill ${candidate.lipinski ? "pass" : "fail"}`}>{candidate.lipinski === null ? "—" : candidate.lipinski ? "PASS" : "FAIL"}</span></td>
-                      <td><strong className="vina-score">{candidate.vina === null ? "—" : `${candidate.vina.toFixed(2)} kcal/mol`}</strong></td>
+                      <td data-label="Rank"><span className="rank">#{candidate.rank}</span></td>
+                      <td data-label="SMILES"><code className="smiles" title={candidate.smiles}>{candidate.smiles}</code></td>
+                      <td data-label="QED">{formatMetric(candidate.qed)}</td>
+                      <td data-label="SA">{formatMetric(candidate.sa)}</td>
+                      <td data-label="MolWt">{formatMetric(candidate.molwt, 1)}</td>
+                      <td data-label="LogP">{formatMetric(candidate.logp, 2)}</td>
+                      <td data-label="Lipinski"><span className={`pill ${candidate.lipinski ? "pass" : "fail"}`}>{candidate.lipinski === null ? "—" : candidate.lipinski ? "PASS" : "FAIL"}</span></td>
+                      <td data-label="Vina score"><strong className="vina-score">{candidate.vina === null ? "—" : `${candidate.vina.toFixed(2)} kcal/mol`}</strong></td>
                     </tr>
                   ))}
                 </tbody>
