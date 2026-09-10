@@ -75,6 +75,9 @@ htmlcov/
 .eggs/
 build/
 dist/
+node_modules/
+.vite/
+*.tsbuildinfo
 
 # Editors and operating systems
 .vscode/

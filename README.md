@@ -51,7 +51,7 @@ drug-design-agent-public/
 ├── app/                    # FastAPI、服务层与 Agent 代码
 ├── scripts/                # 验证与辅助脚本
 ├── source_backup/          # 推理所需的上游源码快照
-├── frontend/               # 前端占位目录（原目录当前为空）
+├── frontend/               # React + TypeScript + Vite 的 Vercel 前端
 ├── models/                 # 模型目录骨架、轻量配置与 tokenizer
 │   ├── base/
 │   ├── e2po/
