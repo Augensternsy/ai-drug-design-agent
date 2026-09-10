@@ -1,4 +1,4 @@
-"""Optional OpenAI-compatible intent parser with deterministic fallback."""
+"""Vendor-neutral OpenAI-compatible intent parser with safe rule fallback."""
 
 from __future__ import annotations
 
@@ -7,10 +7,10 @@ import logging
 from urllib import error, request
 
 from app.config import (
-    LLM_API_BASE_URL,
     LLM_API_KEY,
+    LLM_BASE_URL,
+    LLM_ENABLED,
     LLM_MODEL,
-    LLM_PROVIDER,
     LLM_TIMEOUT_SECONDS,
     MAX_NUM_SAMPLES,
 )
@@ -20,26 +20,51 @@ from app.services.target_service import TargetRegistry
 logger = logging.getLogger(__name__)
 
 
+class LLMProviderError(RuntimeError):
+    """A sanitized LLM transport or response error safe for internal handling."""
+
+
 def llm_is_configured() -> bool:
-    return bool(
-        LLM_PROVIDER == "openai_compatible"
-        and LLM_API_BASE_URL
-        and LLM_API_KEY
-        and LLM_MODEL
-    )
+    """Return true only when the optional provider is explicitly enabled."""
+    return bool(LLM_ENABLED and LLM_BASE_URL and LLM_API_KEY and LLM_MODEL)
+
+
+def chat_completions_url(base_url: str) -> str:
+    """Accept either an API base URL or a full chat-completions endpoint."""
+    normalized = base_url.rstrip("/")
+    if normalized.endswith("/chat/completions"):
+        return normalized
+    return f"{normalized}/chat/completions"
+
+
+def _extract_content(response_body: object) -> str:
+    try:
+        content = response_body["choices"][0]["message"]["content"]  # type: ignore[index]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise LLMProviderError("LLM response did not contain a chat message") from exc
+    if not isinstance(content, str) or not content.strip():
+        raise LLMProviderError("LLM response content was empty")
+    content = content.strip()
+    if content.startswith("```"):
+        try:
+            content = content.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        except (IndexError, ValueError) as exc:
+            raise LLMProviderError("LLM returned an invalid fenced response") from exc
+    return content
 
 
 def parse_with_llm(prompt: str) -> AgentPlan:
-    """Return a validated plan from an OpenAI-compatible chat completion API."""
+    """Call any OpenAI-compatible endpoint and validate its structured plan."""
     if not llm_is_configured():
-        raise RuntimeError("LLM provider is not configured")
+        raise LLMProviderError("LLM provider is disabled or incomplete")
 
     supported = TargetRegistry.get_supported_targets()
     system_prompt = (
-        "Extract a drug-design plan as strict JSON with keys: target, num_samples, "
-        "qed_threshold, sa_threshold, qed_priority, run_docking, dock_top_k. "
+        "You are an intent parser, not a molecular model. Return strict JSON only "
+        "with keys: target, num_samples, qed_threshold, sa_threshold, "
+        "qed_priority, run_docking, dock_top_k. "
         f"target must be one of {supported}; num_samples must be 1-{MAX_NUM_SAMPLES}. "
-        "Use null for absent thresholds and dock_top_k. Do not add prose."
+        "Use null for absent thresholds and dock_top_k. Never add prose."
     )
     payload = json.dumps(
         {
@@ -49,11 +74,11 @@ def parse_with_llm(prompt: str) -> AgentPlan:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},
             ],
-        }
+        },
+        ensure_ascii=False,
     ).encode("utf-8")
-    endpoint = f"{LLM_API_BASE_URL}/chat/completions"
     http_request = request.Request(
-        endpoint,
+        chat_completions_url(LLM_BASE_URL),
         data=payload,
         method="POST",
         headers={
@@ -64,26 +89,35 @@ def parse_with_llm(prompt: str) -> AgentPlan:
     try:
         with request.urlopen(http_request, timeout=LLM_TIMEOUT_SECONDS) as response:
             response_body = json.loads(response.read().decode("utf-8"))
-    except (error.URLError, TimeoutError, json.JSONDecodeError) as exc:
-        raise RuntimeError(f"LLM intent parsing failed: {exc}") from exc
+    except (error.URLError, TimeoutError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise LLMProviderError("LLM request failed or returned invalid JSON") from exc
 
-    content = response_body["choices"][0]["message"]["content"].strip()
-    if content.startswith("```"):
-        content = content.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-    data = json.loads(content)
+    try:
+        data = json.loads(_extract_content(response_body))
+    except json.JSONDecodeError as exc:
+        raise LLMProviderError("LLM plan was not valid JSON") from exc
+    if not isinstance(data, dict):
+        raise LLMProviderError("LLM plan must be a JSON object")
     data["target"] = str(data.get("target", "")).upper()
     data["parser"] = "llm"
+
+    # Pydantic is the authority for thresholds, count limits and field types.
     plan = AgentPlan.model_validate(data)
     if plan.target not in supported:
-        raise ValueError(f"Unsupported target from LLM: {plan.target}")
+        raise LLMProviderError("LLM selected an unsupported target")
     return plan
 
 
 def try_parse_with_llm(prompt: str) -> AgentPlan | None:
+    """Return None on every provider failure so AgentService can use rules."""
     if not llm_is_configured():
         return None
     try:
         return parse_with_llm(prompt)
     except Exception as exc:
-        logger.warning("LLM parser unavailable; using deterministic fallback: %s", exc)
+        # Log only the exception class: never log prompts, response bodies or keys.
+        logger.warning(
+            "LLM plan parsing failed (%s); using rules fallback",
+            type(exc).__name__,
+        )
         return None

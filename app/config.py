@@ -35,13 +35,15 @@ REQUEST_COOLDOWN_SECONDS = max(
     0.0, float(os.getenv("REQUEST_COOLDOWN_SECONDS", "15"))
 )
 
-# Optional OpenAI-compatible LLM parser. The deterministic rules parser remains
-# available when no key is configured, so the Agent never depends on a secret.
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "none").strip().lower()
-LLM_API_BASE_URL = os.getenv("LLM_API_BASE_URL", "").rstrip("/")
+# Optional OpenAI-compatible LLM parser. A fixed timeout avoids tying up the API
+# during provider outages; all failures fall back to deterministic rules.
+LLM_ENABLED = os.getenv("LLM_ENABLED", "false").strip().lower() in {
+    "1", "true", "yes", "on"
+}
+LLM_BASE_URL = os.getenv("LLM_BASE_URL", "").rstrip("/")
 LLM_API_KEY = os.getenv("LLM_API_KEY", "")
 LLM_MODEL = os.getenv("LLM_MODEL", "")
-LLM_TIMEOUT_SECONDS = max(1.0, float(os.getenv("LLM_TIMEOUT_SECONDS", "10")))
+LLM_TIMEOUT_SECONDS = 10.0
 
 # ============================================================
 # Model & Tokenizer Paths

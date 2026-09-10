@@ -110,14 +110,17 @@ without placing credentials in Git or Vercel:
 
 ```powershell
 py -m modal secret create ai-drug-design-agent-llm `
-  LLM_PROVIDER=openai_compatible `
-  LLM_API_BASE_URL=https://your-provider.example/v1 `
-  LLM_MODEL=your-model-name `
-  LLM_API_KEY=your-private-key
+  LLM_ENABLED=true `
+  LLM_BASE_URL=https://your-provider.example/v1 `
+  LLM_API_KEY=replace-with-private-key `
+  LLM_MODEL=your-model-name
 $env:MODAL_LLM_SECRET_NAME = 'ai-drug-design-agent-llm'
 ```
 
-If `MODAL_LLM_SECRET_NAME` is not set, deployment remains fully functional with
+`LLM_BASE_URL` may be an API base such as `/v1` or the complete
+`/v1/chat/completions` URL. This works with OpenAI, DeepSeek, and other
+OpenAI-compatible providers without vendor-specific SDK code. If
+`MODAL_LLM_SECRET_NAME` is not set, deployment remains fully functional with
 the rules parser. Never configure `LLM_API_KEY` as a `VITE_*` variable.
 
 ## 5. Deploy the FastAPI endpoint
