@@ -110,11 +110,11 @@ endpoint. Create the named Modal Secret without placing credentials in Git or
 Vercel:
 
 ```powershell
-py -m modal secret create ai-drug-design-agent-llm `
+py -m modal secret create --force ai-drug-design-agent-llm `
   LLM_ENABLED=true `
   LLM_BASE_URL=https://api.qnaigc.com/v1 `
   LLM_API_KEY="<YOUR_QINIU_API_KEY>" `
-  LLM_MODEL=deepseek-flash
+  LLM_MODEL=deepseek-v4-flash
 ```
 
 `LLM_BASE_URL` may be an API base such as `/v1` or the complete

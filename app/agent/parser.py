@@ -61,9 +61,12 @@ def parse_rule_prompt(prompt: str) -> AgentPlan:
     if sa_threshold is not None and not 1.0 <= sa_threshold <= 10.0:
         raise AgentParseError("SA 阈值必须位于 1.0–10.0。")
 
-    docking_requested = bool(re.search(r"VINA|DOCK(?:ING)?|对接", upper))
     docking_disabled = bool(re.search(r"(?:不|无需|不要|关闭)\s*(?:进行|执行)?\s*(?:VINA|DOCK(?:ING)?|对接)", upper))
-    run_docking = docking_requested and not docking_disabled
+    # Explicit negation wins before the generic keyword check. This prevents
+    # the word "Vina" inside "不进行 Vina 对接" from enabling docking.
+    run_docking = False if docking_disabled else bool(
+        re.search(r"VINA|DOCK(?:ING)?|对接", upper)
+    )
     dock_top_k = 1 if run_docking and re.search(r"最优|最佳|TOP\s*1", upper) else None
 
     return AgentPlan(

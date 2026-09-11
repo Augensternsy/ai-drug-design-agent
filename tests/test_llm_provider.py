@@ -1,8 +1,12 @@
+import io
 import json
 import unittest
+from urllib import error
 from unittest.mock import patch
 
 from app.agent import llm_provider
+from app.agent.service import AgentService
+from app.schemas.api_models import AgentGenerateRequest
 
 
 class FakeResponse:
@@ -18,6 +22,10 @@ class FakeResponse:
     def read(self):
         return self.body
 
+    @property
+    def status(self):
+        return 200
+
 
 def completion(content):
     return {"choices": [{"message": {"content": content}}]}
@@ -30,7 +38,7 @@ class LlmProviderTests(unittest.TestCase):
             LLM_ENABLED=True,
             LLM_BASE_URL="https://api.qnaigc.com/v1",
             LLM_API_KEY="test-only-key",
-            LLM_MODEL="deepseek-flash",
+            LLM_MODEL="deepseek-v4-flash",
         )
 
     def test_requires_enabled_and_complete_configuration(self):
@@ -67,7 +75,8 @@ class LlmProviderTests(unittest.TestCase):
         with self.configured(), patch.object(
             llm_provider.request, "urlopen", return_value=FakeResponse(body)
         ) as urlopen:
-            plan = llm_provider.parse_with_llm("test prompt")
+            prompt = "帮我针对 ESR1 生成 1 个候选分子，不进行 Vina 对接。"
+            plan = llm_provider.parse_with_llm(prompt)
         self.assertEqual(plan.target, "ESR1")
         self.assertEqual(plan.num_samples, 5)
         self.assertEqual(plan.parser, "llm")
@@ -80,8 +89,36 @@ class LlmProviderTests(unittest.TestCase):
             outgoing_request.get_header("Authorization"),
             "Bearer test-only-key",
         )
-        self.assertEqual(json.loads(outgoing_request.data)["model"], "deepseek-flash")
+        request_json = json.loads(outgoing_request.data.decode("utf-8"))
+        self.assertEqual(request_json["model"], "deepseek-v4-flash")
+        self.assertEqual(request_json["messages"][1]["content"], prompt)
         self.assertEqual(urlopen.call_args.kwargs["timeout"], 10.0)
+
+    def test_http_error_logs_status_without_exposing_key(self):
+        response = io.BytesIO(
+            json.dumps({
+                "error": {
+                    "code": "model_not_found",
+                    "type": "invalid_request_error",
+                    "message": "Unknown model",
+                }
+            }).encode("utf-8")
+        )
+        http_error = error.HTTPError(
+            "https://api.qnaigc.com/v1/chat/completions",
+            400,
+            "Bad Request",
+            {},
+            response,
+        )
+        with self.configured(), patch.object(
+            llm_provider.request, "urlopen", side_effect=http_error
+        ), self.assertLogs(llm_provider.logger, level="WARNING") as captured:
+            self.assertIsNone(llm_provider.try_parse_with_llm("ESR1 生成 1 个分子"))
+        logs = " ".join(captured.output)
+        self.assertIn("http_status=400", logs)
+        self.assertIn("error_code=model_not_found", logs)
+        self.assertNotIn("test-only-key", logs)
 
     def test_full_chat_completions_url_is_not_duplicated(self):
         self.assertEqual(
@@ -95,6 +132,25 @@ class LlmProviderTests(unittest.TestCase):
         ) as urlopen:
             self.assertIsNone(llm_provider.try_parse_with_llm("ESR1 生成 3 个分子"))
         urlopen.assert_called_once()
+
+    def test_llm_failure_uses_rules_with_chinese_semantics(self):
+        prompt = "帮我针对 ESR1 生成 1 个候选分子，QED 优先，不进行 Vina 对接。"
+        with self.configured(), patch.object(
+            llm_provider.request, "urlopen", side_effect=TimeoutError("mock timeout")
+        ):
+            plan = AgentService.build_plan(AgentGenerateRequest(prompt=prompt))
+        self.assertEqual(plan.parser, "rules")
+        self.assertEqual(plan.num_samples, 1)
+        self.assertFalse(plan.run_docking)
+
+    def test_configuration_log_reports_presence_not_key(self):
+        with self.configured(), patch.object(
+            llm_provider.request, "urlopen", side_effect=TimeoutError("mock timeout")
+        ), self.assertLogs(llm_provider.logger, level="INFO") as captured:
+            llm_provider.try_parse_with_llm("ESR1 生成 1 个分子")
+        logs = " ".join(captured.output)
+        self.assertIn("LLM_API_KEY_PRESENT=true", logs)
+        self.assertNotIn("test-only-key", logs)
 
     def test_malformed_json_falls_back(self):
         with self.configured(), patch.object(

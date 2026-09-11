@@ -9,7 +9,7 @@ DLPS-E2PO, RDKit and optional AutoDock Vina pipeline.
 ```text
 LLM_ENABLED=true
 LLM_BASE_URL=https://api.qnaigc.com/v1
-LLM_MODEL=deepseek-flash
+LLM_MODEL=deepseek-v4-flash
 LLM_API_KEY=<injected by Modal Secret>
 ```
 
@@ -24,11 +24,11 @@ Volume and Secret dependency list identical during deploy and remote hydration.
 Run in PowerShell and replace only the API-key placeholder:
 
 ```powershell
-py -m modal secret create ai-drug-design-agent-llm `
+py -m modal secret create --force ai-drug-design-agent-llm `
   LLM_ENABLED=true `
   LLM_BASE_URL=https://api.qnaigc.com/v1 `
   LLM_API_KEY="<YOUR_QINIU_API_KEY>" `
-  LLM_MODEL=deepseek-flash
+  LLM_MODEL=deepseek-v4-flash
 ```
 
 ## Deploy with the Secret
@@ -46,7 +46,8 @@ deployment when a real end-to-end test is intended:
 ```powershell
 $ApiUrl = 'https://augensternsy--ai-drug-design-agent-fastapi-api.modal.run'
 $Body = @{ prompt = '帮我针对 ESR1 生成 1 个候选分子，QED 优先，不进行 Vina 对接。' } | ConvertTo-Json
-$Task = Invoke-RestMethod -Method Post -Uri "$ApiUrl/api/agent/generate" -ContentType 'application/json' -Body $Body
+$Utf8Body = [System.Text.Encoding]::UTF8.GetBytes($Body)
+$Task = Invoke-RestMethod -Method Post -Uri "$ApiUrl/api/agent/generate" -ContentType 'application/json; charset=utf-8' -Body $Utf8Body
 if ($Task.plan.parser -ne 'llm') { throw "Expected LLM parser, got $($Task.plan.parser)" }
 do {
   Start-Sleep -Seconds 5

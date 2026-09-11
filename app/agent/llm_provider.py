@@ -5,6 +5,9 @@ from __future__ import annotations
 import json
 import logging
 from urllib import error, request
+from urllib.parse import urlsplit, urlunsplit
+
+from pydantic import ValidationError
 
 from app.config import (
     LLM_API_KEY,
@@ -27,6 +30,36 @@ class LLMProviderError(RuntimeError):
 def llm_is_configured() -> bool:
     """Return true only when the optional provider is explicitly enabled."""
     return bool(LLM_ENABLED and LLM_BASE_URL and LLM_API_KEY and LLM_MODEL)
+
+
+def _safe_base_url(value: str) -> str:
+    """Remove query strings and user info before logging a provider URL."""
+    try:
+        parsed = urlsplit(value)
+        hostname = parsed.hostname or ""
+        port = f":{parsed.port}" if parsed.port else ""
+    except ValueError:
+        return "<invalid>"
+    return urlunsplit((parsed.scheme, f"{hostname}{port}", parsed.path, "", ""))
+
+
+def _safe_error_fields(raw: bytes) -> tuple[bool, str, str, str]:
+    """Extract bounded error metadata without logging credentials or prompts."""
+    try:
+        body = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return False, "unknown", "unknown", "unavailable"
+    error_body = body.get("error", body) if isinstance(body, dict) else {}
+    if not isinstance(error_body, dict):
+        return True, "unknown", "unknown", "unavailable"
+
+    def safe_value(key: str) -> str:
+        value = " ".join(str(error_body.get(key, "unknown")).split())[:240]
+        if LLM_API_KEY:
+            value = value.replace(LLM_API_KEY, "[REDACTED]")
+        return value
+
+    return True, safe_value("code"), safe_value("type"), safe_value("message")
 
 
 def chat_completions_url(base_url: str) -> str:
@@ -88,9 +121,39 @@ def parse_with_llm(prompt: str) -> AgentPlan:
     )
     try:
         with request.urlopen(http_request, timeout=LLM_TIMEOUT_SECONDS) as response:
-            response_body = json.loads(response.read().decode("utf-8"))
-    except (error.URLError, TimeoutError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise LLMProviderError("LLM request failed or returned invalid JSON") from exc
+            http_status = getattr(response, "status", 200)
+            raw_response = response.read()
+    except error.HTTPError as exc:
+        response_is_json, error_code, error_type, error_message = _safe_error_fields(
+            exc.read()
+        )
+        logger.warning(
+            "LLM request failed http_status=%s response_json=%s "
+            "error_code=%s error_type=%s error_message=%s",
+            exc.code,
+            str(response_is_json).lower(),
+            error_code,
+            error_type,
+            error_message,
+        )
+        raise LLMProviderError(f"http_status_{exc.code}") from exc
+    except TimeoutError as exc:
+        raise LLMProviderError("timeout") from exc
+    except error.URLError as exc:
+        reason = "timeout" if isinstance(exc.reason, TimeoutError) else "network_error"
+        raise LLMProviderError(reason) from exc
+
+    try:
+        response_body = json.loads(raw_response.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise LLMProviderError("response_json_invalid") from exc
+    logger.info(
+        "LLM request completed http_status=%s response_json=true "
+        "response_bytes=%s model=%s",
+        http_status,
+        len(raw_response),
+        LLM_MODEL,
+    )
 
     try:
         data = json.loads(_extract_content(response_body))
@@ -102,7 +165,10 @@ def parse_with_llm(prompt: str) -> AgentPlan:
     data["parser"] = "llm"
 
     # Pydantic is the authority for thresholds, count limits and field types.
-    plan = AgentPlan.model_validate(data)
+    try:
+        plan = AgentPlan.model_validate(data)
+    except ValidationError as exc:
+        raise LLMProviderError("agent_plan_validation_failed") from exc
     if plan.target not in supported:
         raise LLMProviderError("LLM selected an unsupported target")
     return plan
@@ -110,14 +176,20 @@ def parse_with_llm(prompt: str) -> AgentPlan:
 
 def try_parse_with_llm(prompt: str) -> AgentPlan | None:
     """Return None on every provider failure so AgentService can use rules."""
+    logger.info(
+        "LLM config enabled=%s base_url=%s LLM_API_KEY_PRESENT=%s model=%s",
+        str(LLM_ENABLED).lower(),
+        _safe_base_url(LLM_BASE_URL),
+        str(bool(LLM_API_KEY)).lower(),
+        LLM_MODEL or "<unset>",
+    )
     if not llm_is_configured():
+        logger.warning("LLM fallback_reason=configuration_incomplete")
         return None
     try:
         return parse_with_llm(prompt)
     except Exception as exc:
-        # Log only the exception class: never log prompts, response bodies or keys.
-        logger.warning(
-            "LLM plan parsing failed (%s); using rules fallback",
-            type(exc).__name__,
-        )
+        # Log only sanitized diagnostics: never log prompts, raw bodies or keys.
+        reason = str(exc) if isinstance(exc, LLMProviderError) else type(exc).__name__
+        logger.warning("LLM fallback_reason=%s", reason)
         return None

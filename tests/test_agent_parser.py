@@ -28,6 +28,14 @@ class AgentParserTests(unittest.TestCase):
         plan = parse_rule_prompt("针对 FTO 生成 2 个分子，不要进行 Vina 对接")
         self.assertFalse(plan.run_docking)
 
+    def test_exact_chinese_prompt_preserves_count_and_vina_negation(self):
+        plan = parse_rule_prompt(
+            "帮我针对 ESR1 生成 1 个候选分子，QED 优先，不进行 Vina 对接。"
+        )
+        self.assertEqual(plan.num_samples, 1)
+        self.assertTrue(plan.qed_priority)
+        self.assertFalse(plan.run_docking)
+
 
 if __name__ == "__main__":
     unittest.main()
