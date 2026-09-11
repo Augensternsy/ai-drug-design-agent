@@ -13,9 +13,11 @@ LLM_MODEL=deepseek-flash
 LLM_API_KEY=<injected by Modal Secret>
 ```
 
-`modal_app.py` binds the Secret named by `MODAL_LLM_SECRET_NAME` to the
-`fastapi_api` function. These four variables are therefore available only in
-the Modal backend container and are never exposed as `VITE_*` variables.
+`modal_app.py` unconditionally binds the fixed Secret
+`ai-drug-design-agent-llm` to the `fastapi_api` function. These four variables
+are therefore available only in the Modal backend container and are never
+exposed as `VITE_*` variables. The unconditional binding keeps the Modal Image,
+Volume and Secret dependency list identical during deploy and remote hydration.
 
 ## Create the Modal Secret
 
@@ -33,7 +35,6 @@ py -m modal secret create ai-drug-design-agent-llm `
 
 ```powershell
 Set-Location 'E:\blog\AIProjects\drug-design-agent-public'
-$env:MODAL_LLM_SECRET_NAME = 'ai-drug-design-agent-llm'
 py -m modal deploy .\modal_app.py
 ```
 

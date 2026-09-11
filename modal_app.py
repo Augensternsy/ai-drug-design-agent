@@ -20,7 +20,6 @@ APP_NAME = os.getenv("MODAL_APP_NAME", "ai-drug-design-agent")
 VOLUME_NAME = os.getenv("MODAL_VOLUME_NAME", "ai-drug-design-assets")
 GPU_TYPE = os.getenv("MODAL_GPU", "A10")
 SCALEDOWN_WINDOW = int(os.getenv("MODAL_SCALEDOWN_WINDOW", "300"))
-LLM_SECRET_NAME = os.getenv("MODAL_LLM_SECRET_NAME", "").strip()
 
 PROJECT_DIR = "/root/drug-design-agent"
 VOLUME_MOUNT = "/workspace"
@@ -31,7 +30,7 @@ LOCAL_ROOT = Path(__file__).resolve().parent
 
 app = modal.App(APP_NAME)
 assets_volume = modal.Volume.from_name(VOLUME_NAME, create_if_missing=False)
-runtime_secrets = [modal.Secret.from_name(LLM_SECRET_NAME)] if LLM_SECRET_NAME else []
+llm_secret = modal.Secret.from_name("ai-drug-design-agent-llm")
 
 runtime_env = {
     "PYTHONUNBUFFERED": "1",
@@ -171,7 +170,7 @@ def extract_assets() -> dict[str, str]:
     max_containers=1,
     scaledown_window=SCALEDOWN_WINDOW,
     timeout=3600,
-    secrets=runtime_secrets,
+    secrets=[llm_secret],
 )
 @modal.concurrent(max_inputs=8)
 @modal.asgi_app()

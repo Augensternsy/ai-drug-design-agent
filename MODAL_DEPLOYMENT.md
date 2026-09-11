@@ -115,14 +115,15 @@ py -m modal secret create ai-drug-design-agent-llm `
   LLM_BASE_URL=https://api.qnaigc.com/v1 `
   LLM_API_KEY="<YOUR_QINIU_API_KEY>" `
   LLM_MODEL=deepseek-flash
-$env:MODAL_LLM_SECRET_NAME = 'ai-drug-design-agent-llm'
 ```
 
 `LLM_BASE_URL` may be an API base such as `/v1` or the complete
 `/v1/chat/completions` URL. This works with OpenAI, DeepSeek, and other
-OpenAI-compatible providers without vendor-specific SDK code. If
-`MODAL_LLM_SECRET_NAME` is not set, deployment remains fully functional with
-the rules parser. Never configure `LLM_API_KEY` as a `VITE_*` variable.
+OpenAI-compatible providers without vendor-specific SDK code. `modal_app.py`
+always binds the fixed `ai-drug-design-agent-llm` Secret so its dependency list
+is identical during local deploy and remote hydration. If the injected key is
+empty or the provider fails, the Agent uses its rules parser. Never configure
+`LLM_API_KEY` as a `VITE_*` variable.
 
 For the copy-ready Qiniu setup and final Agent smoke test, see
 [QINIU_LLM_SETUP.md](QINIU_LLM_SETUP.md).
