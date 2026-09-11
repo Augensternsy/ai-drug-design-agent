@@ -28,9 +28,9 @@ class LlmProviderTests(unittest.TestCase):
         return patch.multiple(
             llm_provider,
             LLM_ENABLED=True,
-            LLM_BASE_URL="https://compatible.example/v1",
+            LLM_BASE_URL="https://api.qnaigc.com/v1",
             LLM_API_KEY="test-only-key",
-            LLM_MODEL="compatible-model",
+            LLM_MODEL="deepseek-flash",
         )
 
     def test_requires_enabled_and_complete_configuration(self):
@@ -50,6 +50,9 @@ class LlmProviderTests(unittest.TestCase):
             LLM_MODEL="compatible-model",
         ):
             self.assertFalse(llm_provider.llm_is_configured())
+            self.assertIsNone(
+                llm_provider.try_parse_with_llm("针对 ESR1 生成 1 个候选分子")
+            )
 
     def test_successful_openai_compatible_response_is_schema_validated(self):
         body = completion(json.dumps({
@@ -68,7 +71,16 @@ class LlmProviderTests(unittest.TestCase):
         self.assertEqual(plan.target, "ESR1")
         self.assertEqual(plan.num_samples, 5)
         self.assertEqual(plan.parser, "llm")
-        self.assertEqual(urlopen.call_args.args[0].full_url, "https://compatible.example/v1/chat/completions")
+        outgoing_request = urlopen.call_args.args[0]
+        self.assertEqual(
+            outgoing_request.full_url,
+            "https://api.qnaigc.com/v1/chat/completions",
+        )
+        self.assertEqual(
+            outgoing_request.get_header("Authorization"),
+            "Bearer test-only-key",
+        )
+        self.assertEqual(json.loads(outgoing_request.data)["model"], "deepseek-flash")
         self.assertEqual(urlopen.call_args.kwargs["timeout"], 10.0)
 
     def test_full_chat_completions_url_is_not_duplicated(self):

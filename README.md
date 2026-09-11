@@ -194,6 +194,8 @@ LLM_MODEL=compatible-model-name
 
 `LLM_BASE_URL` 可以是 API base（如 `/v1`），也可以是完整的 `/v1/chat/completions` URL，适用于 OpenAI、DeepSeek 及其他兼容服务。请求固定 10 秒超时，失败后不重试外部服务，而是立即回退规则解析。
 
+当前 Modal 的七牛云配置与 Secret 创建命令见 [QINIU_LLM_SETUP.md](QINIU_LLM_SETUP.md)。真实 API Key 仅通过 Modal Secret 注入，不进入源码、示例环境文件或 Vercel。
+
 ### Frontend
 
 ```bash

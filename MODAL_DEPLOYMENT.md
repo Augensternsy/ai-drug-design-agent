@@ -105,15 +105,16 @@ $env:MODAL_SCALEDOWN_WINDOW = '300'
 Do not override the fixed checkpoint, sampling steps, or clamp mode.
 
 The natural-language Agent works without an LLM key through its deterministic
-rules parser. To enable an OpenAI-compatible provider, create a Modal Secret
-without placing credentials in Git or Vercel:
+rules parser. The production LLM configuration uses Qiniu's OpenAI-compatible
+endpoint. Create the named Modal Secret without placing credentials in Git or
+Vercel:
 
 ```powershell
 py -m modal secret create ai-drug-design-agent-llm `
   LLM_ENABLED=true `
-  LLM_BASE_URL=https://your-provider.example/v1 `
-  LLM_API_KEY=replace-with-private-key `
-  LLM_MODEL=your-model-name
+  LLM_BASE_URL=https://api.qnaigc.com/v1 `
+  LLM_API_KEY="<YOUR_QINIU_API_KEY>" `
+  LLM_MODEL=deepseek-flash
 $env:MODAL_LLM_SECRET_NAME = 'ai-drug-design-agent-llm'
 ```
 
@@ -122,6 +123,9 @@ $env:MODAL_LLM_SECRET_NAME = 'ai-drug-design-agent-llm'
 OpenAI-compatible providers without vendor-specific SDK code. If
 `MODAL_LLM_SECRET_NAME` is not set, deployment remains fully functional with
 the rules parser. Never configure `LLM_API_KEY` as a `VITE_*` variable.
+
+For the copy-ready Qiniu setup and final Agent smoke test, see
+[QINIU_LLM_SETUP.md](QINIU_LLM_SETUP.md).
 
 ## 5. Deploy the FastAPI endpoint
 
