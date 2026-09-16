@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { API_BASE_URL, apiRequest } from "./api";
+import { checkBackendHealth, type BackendMode } from "./backend";
 import { MoleculeCard } from "./components/MoleculeCard";
+import { createVerifiedDemoTask, parseDemoPrompt } from "./demo";
 import type { AgentGenerateResponse, GenerateResponse, StoredTask, Task } from "./types";
 import { downloadAllSdf, exportTaskCsv, exportTaskJson } from "./utils/exports";
 import { clearHistory, loadHistory, saveTaskToHistory } from "./utils/history";
@@ -68,6 +70,7 @@ function App() {
   const [cooldown, setCooldown] = useState(0);
   const [history, setHistory] = useState<StoredTask[]>(() => loadHistory());
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [backendMode, setBackendMode] = useState<BackendMode>("checking");
   const pollTimer = useRef<number | null>(null);
   const lastSavedTask = useRef<string | null>(null);
 
@@ -79,6 +82,19 @@ function App() {
     () => submittedWithDocking ? DISPLAY_STAGES : DISPLAY_STAGES.filter((stage) => stage !== "docking"),
     [submittedWithDocking],
   );
+
+  useEffect(() => {
+    let active = true;
+    checkBackendHealth(API_BASE_URL).then((nextMode) => {
+      if (!active) return;
+      setBackendMode(nextMode);
+      if (nextMode === "demo") {
+        setSubmittedWithDocking(false);
+        setTask(createVerifiedDemoTask("ESR1", 1, false));
+      }
+    });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -142,6 +158,20 @@ function App() {
     setTaskId(null);
 
     try {
+      if (backendMode === "demo") {
+        if (submission.kind === "form") {
+          setSubmittedWithDocking(false);
+          setTask(createVerifiedDemoTask(submission.target, submission.count, submission.docking));
+        } else {
+          const parsed = parseDemoPrompt(submission.prompt);
+          setSubmittedWithDocking(false);
+          setTask(createVerifiedDemoTask(parsed.target, parsed.count, false, true));
+        }
+        setCooldown(COOLDOWN_SECONDS);
+        return;
+      }
+      if (backendMode !== "live") return;
+
       if (submission.kind === "form") {
         setSubmittedWithDocking(submission.docking);
         const response = await apiRequest<GenerateResponse>("/api/generate", {
@@ -178,6 +208,12 @@ function App() {
     setHistoryOpen(false);
   };
 
+  const backendLabel = backendMode === "live"
+    ? "Live GPU · RTX 3090"
+    : backendMode === "demo"
+      ? "Demo Mode"
+      : "Checking GPU…";
+
   return (
     <div className="app-shell">
       <header className="site-header">
@@ -187,9 +223,11 @@ function App() {
         </a>
         <div className="header-actions">
           <button type="button" className="history-trigger" onClick={() => setHistoryOpen((value) => !value)} aria-expanded={historyOpen}>历史任务 <span>{history.length}</span></button>
-          <div className={`system-badge ${API_BASE_URL ? "live" : "demo"}`}><span />{API_BASE_URL ? "LIVE · Modal GPU" : "DEMO UI"}</div>
+          <div className={`system-badge ${backendMode}`} role="status"><span />{backendLabel}</div>
         </div>
       </header>
+
+      {backendMode === "demo" && <div className="backend-notice demo"><strong>Demo / Precomputed Result</strong><span>RTX 3090 后端当前不可达；页面仅展示既有真实模型 SMILES，不会请求生成或 Vina。</span></div>}
 
       {historyOpen && (
         <aside className="history-panel" aria-label="最近任务">
@@ -228,7 +266,7 @@ function App() {
             <form className="agent-prompt" onSubmit={prepareAgentSubmission}>
               <label htmlFor="agent-prompt"><span>Agent 指令</span><small>无 LLM Key 时自动使用本地规则解析</small></label>
               <textarea id="agent-prompt" rows={4} maxLength={500} value={agentPrompt} onChange={(event) => setAgentPrompt(event.target.value)} disabled={running} placeholder="例如：帮我针对 ESR1 生成 5 个候选分子，QED 优先，SA&lt;3.5，并对最优结果进行 Vina 对接。" />
-              <div className="agent-prompt__footer"><span>{agentPrompt.length}/500</span><button type="submit" disabled={running || cooldown > 0 || !API_BASE_URL || agentPrompt.trim().length < 3}>{cooldown > 0 ? `${cooldown}s 后可提交` : "交给 Agent →"}</button></div>
+              <div className="agent-prompt__footer"><span>{agentPrompt.length}/500</span><button type="submit" disabled={running || cooldown > 0 || backendMode === "checking" || agentPrompt.trim().length < 3}>{cooldown > 0 ? `${cooldown}s 后可提交` : backendMode === "checking" ? "检查后端中…" : "交给 Agent →"}</button></div>
             </form>
           )}
         </section>
@@ -253,9 +291,9 @@ function App() {
             </div>
 
             <label className="toggle-row" htmlFor="run-docking"><span><strong>AutoDock Vina</strong><small>默认关闭；启用会增加 GPU 占用与任务耗时</small></span><input id="run-docking" type="checkbox" checked={runDocking} onChange={(event) => setRunDocking(event.target.checked)} disabled={running} /><i aria-hidden="true" /></label>
-            <button className="submit-button" type="submit" disabled={running || cooldown > 0 || !API_BASE_URL}>{running ? <><span className="spinner" />任务执行中</> : cooldown > 0 ? <>冷却中 <span>{cooldown}s</span></> : <>检查并生成 <span>→</span></>}</button>
+            <button className="submit-button" type="submit" disabled={running || cooldown > 0 || backendMode === "checking"}>{running ? <><span className="spinner" />任务执行中</> : cooldown > 0 ? <>冷却中 <span>{cooldown}s</span></> : backendMode === "checking" ? <>检查后端中 <span className="spinner" /></> : backendMode === "demo" ? <>查看预计算结果 <span>→</span></> : <>检查并生成 <span>→</span></>}</button>
             <p className="submit-hint">提交前会再次确认；任务开始后按钮将锁定。</p>
-            {!API_BASE_URL && <p className="config-warning">当前仅展示 Demo UI，请配置 VITE_API_BASE_URL。</p>}
+            {backendMode === "demo" && <p className="config-warning">Demo Mode 不会请求后端；所有结果均明确标注为预计算内容。</p>}
           </form>
 
           <section className="status-panel" aria-live="polite" aria-busy={running}>
@@ -281,7 +319,7 @@ function App() {
         </section>
       </main>
 
-      {pending && <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setPending(null); }}><section className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title"><p className="eyebrow">GPU cost check</p><h2 id="confirm-title">确认提交生成任务？</h2><p>{pending.kind === "form" ? `${pending.target} · ${pending.count} 个候选 · Vina ${pending.docking ? "开启" : "关闭"}` : pending.prompt}</p><ul><li>Modal GPU 可能需要冷启动，请保持页面开启。</li><li>公开 Demo 单次最多 5 个候选，提交后进入 15 秒冷却。</li><li>Vina 会增加执行时间；仅在确有需要时开启。</li></ul><div><button type="button" className="secondary-button" onClick={() => setPending(null)}>返回修改</button><button type="button" className="primary-button" onClick={confirmSubmission}>确认提交</button></div></section></div>}
+      {pending && <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setPending(null); }}><section className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title"><p className="eyebrow">{backendMode === "demo" ? "Demo disclosure" : "GPU cost check"}</p><h2 id="confirm-title">{backendMode === "demo" ? "确认查看预计算结果？" : "确认提交生成任务？"}</h2><p>{pending.kind === "form" ? `${pending.target} · ${pending.count} 个候选 · Vina ${pending.docking ? "开启" : "关闭"}` : pending.prompt}</p><ul>{backendMode === "demo" ? <><li>当前为 Demo Mode，不会请求 RTX 3090 后端。</li><li>结果来自既有真实模型 SMILES，缺失指标显示 N/A。</li><li>本次不会执行 RDKit、分子生成或 Vina。</li></> : <><li>RTX 3090 服务可能需要冷启动，请保持页面开启。</li><li>公开 Demo 单次最多 5 个候选，提交后进入 15 秒冷却。</li><li>Vina 会增加执行时间；仅在确有需要时开启。</li></>}</ul><div><button type="button" className="secondary-button" onClick={() => setPending(null)}>返回修改</button><button type="button" className="primary-button" onClick={confirmSubmission}>确认</button></div></section></div>}
 
       <footer><span>AI Drug Design Agent</span><span>Agent → ESM-2 → DLPS-E2PO → RDKit → AutoDock Vina</span></footer>
     </div>

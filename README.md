@@ -3,7 +3,7 @@
 面向科研展示与在线 Demo 的靶点条件分子设计与筛选 Agent。用户可以通过结构化表单或自然语言描述任务；Agent 将意图转换为经过 Pydantic 校验的执行计划，再编排 ESM-2、DLPS-E2PO、RDKit 与 AutoDock Vina 完成候选生成、评价、可选对接、排序和展示。
 
 [![Frontend](https://img.shields.io/badge/Frontend-Vercel-black)](https://frontend-augensternsys-projects.vercel.app)
-[![Backend](https://img.shields.io/badge/Backend-Modal_GPU-6C5CE7)](https://augensternsy--ai-drug-design-agent-fastapi-api.modal.run)
+[![Backend](https://img.shields.io/badge/Backend-RTX_3090-76B900)](https://bianjilong.tailb99a04.ts.net)
 [![API](https://img.shields.io/badge/API-FastAPI-009688)](docs/architecture.md)
 [![Research](https://img.shields.io/badge/Validated_targets-12-orange)](#supported-targets)
 
@@ -13,9 +13,9 @@
 
 - Vercel：<https://frontend-augensternsys-projects.vercel.app>
 - GitHub：<https://github.com/Augensternsy/ai-drug-design-agent>
-- Modal API：<https://augensternsy--ai-drug-design-agent-fastapi-api.modal.run>
+- Production API：<https://bianjilong.tailb99a04.ts.net>
 
-Modal Academic Credits 正在审核，在线 GPU 服务可能因额度或冷启动暂时不可用。无需 GPU 时可查看下方本地 mock UI 预览；它仅用于展示交互，不代表真实推理结果。
+前端启动后会在 5 秒内检查生产 API。成功时显示 `Live GPU · RTX 3090`；失败或超时时自动进入 `Demo Mode`，只展示明确标注的既有真实模型 SMILES，不伪装成实时推理结果。
 
 ## Demo Screenshots
 
@@ -35,15 +35,19 @@ Modal Academic Credits 正在审核，在线 GPU 服务可能因额度或冷启�
 | --- | --- | --- |
 | GitHub | 公开工程骨架、前后端代码、测试与部署文档 | 不包含模型权重、真实 `.env` 或数据资产 |
 | Vercel | React + TypeScript 静态前端 | 仅配置公开的 `VITE_API_BASE_URL` |
+| RTX 3090 + Tailscale Funnel | 默认生产 FastAPI、Agent 与 GPU 推理工具链 | 只暴露 HTTPS API，不向浏览器下发服务端 Secret |
 | Modal | FastAPI Web Endpoint、Agent、GPU 推理工具链 | LLM Key 使用 Modal Secret；模型/数据使用 Volume |
-| Browser | 表单、Agent 输入、轮询、2D/3D、导出和 localStorage 历史 | 不持有 Modal Token 或 LLM Key |
+| Browser | 健康检查、表单、Agent 输入、轮询、2D/3D、导出和 localStorage 历史 | 不持有 API Token 或 LLM Key |
 
 ## System Architecture
 
 ```mermaid
 flowchart LR
     U[User] --> FE[Vercel React Frontend]
-    FE --> API[FastAPI]
+    FE --> HEALTH{GET /api/health<br/>within 5 seconds?}
+    HEALTH -->|yes| API[RTX 3090 FastAPI<br/>Tailscale Funnel]
+    HEALTH -->|no| DEMO[Demo / Precomputed Result]
+    DEMO --> FE
     API --> AO[Agent Orchestrator]
     AO --> P{LLM Parser available?}
     P -->|yes| LLM[OpenAI-compatible LLM Parser]
@@ -176,8 +180,9 @@ clamp_mode = none
 ## Vercel Frontend
 
 - 科研工作台式 React 页面，支持移动端与键盘操作。
-- 使用 `VITE_API_BASE_URL` 连接 Modal；API 地址不硬编码进业务逻辑。
-- 不使用任何 `VITE_*` 变量保存 LLM Key、Modal Token 或其他 Secret。
+- 使用 `VITE_API_BASE_URL` 连接 RTX 3090 Tailscale Funnel；API 地址不硬编码进业务逻辑。
+- 启动时请求 `/api/health`，5 秒内成功则显示 Live，失败或超时则进入明确标注的 Demo/Precomputed 模式。
+- 不使用任何 `VITE_*` 变量保存 LLM Key、访问 Token 或其他 Secret。
 - 支持 Agent 输入、表单输入、进度轮询、结果卡片、2D/3D、导出和本地历史。
 
 ## Cost & Security Control
@@ -190,7 +195,7 @@ clamp_mode = none
 - LLM 诊断只记录 Key 是否存在、HTTP 状态和脱敏错误字段。
 - Modal 自动缩容到 0，且最多保留一个 GPU 容器。
 - `.env`、权重、数据、输出、缓存和临时 docking 文件均由 `.gitignore` 排除。
-- LLM 或 GPU 服务不可用时提供明确错误；自然语言解析可切换 rule fallback，前端可使用 Demo UI 展示交互。
+- LLM 或 GPU 服务不可用时提供明确错误；健康检查失败时前端使用既有真实模型 SMILES 降级展示，缺失指标标为 `N/A`，且不发起生成或 Vina 请求。
 - 当前 cooldown 为单实例内存保护；若公开流量增长，应在网关增加身份认证、持久化配额和分布式限流。
 
 ## Local Development
@@ -220,6 +225,7 @@ VITE_API_BASE_URL=http://127.0.0.1:8000
 
 ```bash
 cd frontend && npm run build
+cd frontend && npm run test:mock
 cd ..
 python -m compileall app tests modal_app.py
 python -m unittest discover -s tests -v
@@ -229,9 +235,9 @@ python -m unittest discover -s tests -v
 
 ## Deployment
 
-1. 按 [Modal 部署文档](MODAL_DEPLOYMENT.md)准备 Volume、Secret 和 Web Endpoint。
-2. 七牛云 OpenAI-compatible LLM 配置见 [QINIU_LLM_SETUP.md](QINIU_LLM_SETUP.md)。
-3. 在 Vercel 中设置 `VITE_API_BASE_URL=<Modal HTTPS endpoint>` 并部署 `frontend/`。
+1. 在 Vercel 中设置 `VITE_API_BASE_URL=https://bianjilong.tailb99a04.ts.net` 并重新部署 `frontend/`。
+2. RTX 3090 后端通过 Tailscale Funnel 暴露兼容的 FastAPI 接口，并允许 Vercel 来源的 CORS 请求。
+3. Modal Serverless 备选方案见 [Modal 部署文档](MODAL_DEPLOYMENT.md)，七牛云 LLM 配置见 [QINIU_LLM_SETUP.md](QINIU_LLM_SETUP.md)。
 4. RunPod Pod + Network Volume 备选方案见 [RUNPOD_DEPLOYMENT.md](RUNPOD_DEPLOYMENT.md)。
 
 模型权重不随 GitHub 发布；云部署时通过 Modal Volume、RunPod Network Volume 或 Object Storage 挂载。

@@ -4,7 +4,7 @@ import { downloadCandidateSdf } from "../utils/exports";
 import { MoleculeViewer3D } from "./MoleculeViewer3D";
 
 function metric(value: number | null, digits = 3) {
-  return value === null ? "—" : value.toFixed(digits);
+  return value === null ? "N/A" : value.toFixed(digits);
 }
 
 export function MoleculeCard({ candidate }: { candidate: Candidate }) {
@@ -24,7 +24,7 @@ export function MoleculeCard({ candidate }: { candidate: Candidate }) {
     <article className="molecule-card">
       <header className="molecule-card__header">
         <div><span className="rank">#{candidate.rank}</span><strong>候选分子</strong></div>
-        <span className={`pill ${candidate.lipinski ? "pass" : "fail"}`}>{candidate.lipinski === null ? "Lipinski —" : candidate.lipinski ? "Lipinski PASS" : "Lipinski FAIL"}</span>
+        <span className={`pill ${candidate.lipinski === null ? "neutral" : candidate.lipinski ? "pass" : "fail"}`}>{candidate.lipinski === null ? "Lipinski N/A" : candidate.lipinski ? "Lipinski PASS" : "Lipinski FAIL"}</span>
       </header>
 
       <div className="molecule-view-tabs" role="group" aria-label={`候选分子 ${candidate.rank} 视图`}>
@@ -41,7 +41,7 @@ export function MoleculeCard({ candidate }: { candidate: Candidate }) {
         <div><dt>SA</dt><dd>{metric(candidate.sa)}</dd></div>
         <div><dt>MolWt</dt><dd>{metric(candidate.molwt, 1)}</dd></div>
         <div><dt>LogP</dt><dd>{metric(candidate.logp, 2)}</dd></div>
-        <div><dt>Vina</dt><dd className="vina-score">{candidate.vina === null ? "—" : `${candidate.vina.toFixed(2)} kcal/mol`}</dd></div>
+        <div><dt>Vina</dt><dd className="vina-score">{candidate.vina === null ? "N/A" : `${candidate.vina.toFixed(2)} kcal/mol`}</dd></div>
       </dl>
 
       <div className="smiles-block"><span>SMILES</span><code>{candidate.smiles}</code></div>

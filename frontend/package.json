@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "check": "tsc -b",
+    "test:mock": "node --experimental-strip-types --test tests/backend.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {
