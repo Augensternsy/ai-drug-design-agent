@@ -33,13 +33,13 @@ export type Task = {
   task_id: string;
   target: string;
   status: string;
-  progress: number;
+  progress: number | null;
   current_stage: string;
   error: string | null;
   requested: number;
-  generated: number;
-  valid: number;
-  returned: number;
+  generated: number | null;
+  valid: number | null;
+  returned: number | null;
   candidates: Candidate[];
   requested_by_agent: boolean;
   agent_plan: AgentPlan | null;

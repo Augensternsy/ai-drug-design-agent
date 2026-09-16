@@ -19,14 +19,14 @@ export async function apiRequest<T>(path: string, options?: RequestInit): Promis
         throw new Error(`提交过于频繁：${detail}`);
       }
       if (response.status >= 500) {
-        throw new Error(`GPU 服务正在冷启动或暂时不可用，请稍后重试。(${detail})`);
+        throw new Error(`GPU 服务暂时不可用，请稍后重试。(${detail})`);
       }
       throw new Error(detail);
     }
     return response.json() as Promise<T>;
   } catch (error) {
     if (error instanceof TypeError) {
-      throw new Error("无法连接 GPU API。可能正在冷启动，请稍后重试并保持页面开启。");
+      throw new Error("无法连接 GPU API，请稍后重试并保持页面开启。");
     }
     throw error;
   }

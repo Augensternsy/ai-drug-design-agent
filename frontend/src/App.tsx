@@ -2,7 +2,9 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { API_BASE_URL, apiRequest } from "./api";
 import { checkBackendHealth, type BackendMode } from "./backend";
 import { MoleculeCard } from "./components/MoleculeCard";
+import { TaskLoadingCard } from "./components/TaskLoadingCard";
 import { createVerifiedDemoTask, parseDemoPrompt } from "./demo";
+import { pollTaskUntilTerminal } from "./taskPolling";
 import type { AgentGenerateResponse, GenerateResponse, StoredTask, Task } from "./types";
 import { downloadAllSdf, exportTaskCsv, exportTaskJson } from "./utils/exports";
 import { clearHistory, loadHistory, saveTaskToHistory } from "./utils/history";
@@ -23,9 +25,10 @@ const STAGE_LABELS: Record<DisplayStage, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  queued: "任务已进入队列", loading: "正在加载模型", encoding: "正在编码靶点",
-  generating: "正在生成分子", evaluating: "正在评估性质", docking: "正在执行 Vina 对接",
-  ranking: "正在排序并生成结构图", completed: "任务已完成", failed: "任务执行失败",
+  queued: "任务已提交", running: "正在生成候选分子", processing: "正在生成候选分子",
+  loading: "正在生成候选分子", encoding: "正在生成候选分子", generating: "正在生成候选分子",
+  evaluating: "正在生成候选分子", docking: "正在生成候选分子", ranking: "正在生成候选分子",
+  completed: "候选分子已生成", failed: "任务执行失败",
 };
 
 const TOOL_LABELS: Record<string, string> = {
@@ -47,8 +50,8 @@ function displayStageFor(status: string): DisplayStage {
 
 function emptyTask(response: GenerateResponse, target: string, requested: number, agent = false): Task {
   return {
-    task_id: response.task_id, target, status: response.status, progress: 0, current_stage: response.message,
-    error: null, requested, generated: 0, valid: 0, returned: 0, candidates: [], requested_by_agent: agent,
+    task_id: response.task_id, target, status: response.status, progress: null, current_stage: response.message,
+    error: null, requested, generated: null, valid: null, returned: null, candidates: [], requested_by_agent: agent,
     agent_plan: "plan" in response ? (response as AgentGenerateResponse).plan : null, tool_trace: [], summary: null,
   };
 }
@@ -66,15 +69,15 @@ function App() {
   const [submittedWithDocking, setSubmittedWithDocking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [pending, setPending] = useState<PendingSubmission | null>(null);
   const [cooldown, setCooldown] = useState(0);
   const [history, setHistory] = useState<StoredTask[]>(() => loadHistory());
   const [historyOpen, setHistoryOpen] = useState(false);
   const [backendMode, setBackendMode] = useState<BackendMode>("checking");
-  const pollTimer = useRef<number | null>(null);
   const lastSavedTask = useRef<string | null>(null);
 
-  const running = submitting || (!!taskId && task?.status !== "completed" && task?.status !== "failed");
+  const running = submitting || loading;
   const activeStage = displayStageFor(task?.status ?? "queued");
   const activeStageIndex = DISPLAY_STAGES.indexOf(activeStage);
   const taskState = task?.status === "failed" ? "failed" : task?.status === "completed" ? "complete" : "running";
@@ -104,26 +107,37 @@ function App() {
 
   useEffect(() => {
     if (!taskId) return;
-    let cancelled = false;
-    const poll = async () => {
-      try {
-        const nextTask = await apiRequest<Task>(`/api/tasks/${taskId}`);
-        if (cancelled) return;
+    let active = true;
+    const controller = new AbortController();
+    setLoading(true);
+    pollTaskUntilTerminal(taskId, {
+      fetchTask: (id) => apiRequest<unknown>(`/api/tasks/${id}`),
+      initialTask: task ?? undefined,
+      signal: controller.signal,
+      onUpdate: (nextTask) => {
+        if (!active) return;
         setTask(nextTask);
         setError(nextTask.status === "failed" ? nextTask.error ?? "任务执行失败，请检查参数后重试。" : null);
-        if (!["completed", "failed"].includes(nextTask.status)) pollTimer.current = window.setTimeout(poll, 3000);
-      } catch (pollError) {
-        if (cancelled) return;
-        setError(pollError instanceof Error ? pollError.message : "无法获取任务状态，请稍后重试。");
-        pollTimer.current = window.setTimeout(poll, 8000);
-      }
-    };
-    poll();
+      },
+      onTransientError: (pollError) => {
+        if (!active) return;
+        setError(pollError instanceof Error ? `任务状态更新暂时失败，正在继续轮询：${pollError.message}` : "任务状态更新暂时失败，正在继续轮询。");
+      },
+    }).then((finalTask) => {
+      if (!active) return;
+      setTask(finalTask);
+      setError(finalTask.status === "failed" ? finalTask.error ?? "任务执行失败，请检查参数后重试。" : null);
+      setLoading(false);
+    }).catch((pollError) => {
+      if (!active || (pollError instanceof DOMException && pollError.name === "AbortError")) return;
+      setLoading(false);
+      setError(pollError instanceof Error ? pollError.message : "无法获取任务状态，请稍后重试。");
+    });
     return () => {
-      cancelled = true;
-      if (pollTimer.current !== null) window.clearTimeout(pollTimer.current);
+      active = false;
+      controller.abort();
     };
-  }, [taskId]);
+  }, [taskId]); // The submitted task snapshot is intentionally captured once per task id.
 
   useEffect(() => {
     if (!task || !["completed", "failed"].includes(task.status) || lastSavedTask.current === task.task_id) return;
@@ -153,6 +167,7 @@ function App() {
     const submission = pending;
     setPending(null);
     setSubmitting(true);
+    setLoading(false);
     setError(null);
     setTask(null);
     setTaskId(null);
@@ -168,6 +183,7 @@ function App() {
           setTask(createVerifiedDemoTask(parsed.target, parsed.count, false, true));
         }
         setCooldown(COOLDOWN_SECONDS);
+        setLoading(false);
         return;
       }
       if (backendMode !== "live") return;
@@ -183,6 +199,7 @@ function App() {
         });
         setTaskId(response.task_id);
         setTask(emptyTask(response, submission.target, submission.count));
+        setLoading(true);
       } else {
         const response = await apiRequest<AgentGenerateResponse>("/api/agent/generate", {
           method: "POST", headers: { "Content-Type": "application/json" },
@@ -191,9 +208,11 @@ function App() {
         setSubmittedWithDocking(response.plan.run_docking);
         setTaskId(response.task_id);
         setTask(emptyTask(response, response.plan.target, response.plan.num_samples, true));
+        setLoading(true);
       }
       setCooldown(COOLDOWN_SECONDS);
     } catch (submitError) {
+      setLoading(false);
       setError(submitError instanceof Error ? submitError.message : "任务提交失败，请稍后重试。");
     } finally {
       setSubmitting(false);
@@ -202,6 +221,7 @@ function App() {
 
   const restoreHistory = (item: StoredTask) => {
     setTaskId(null);
+    setLoading(false);
     setTask(item.task);
     setSubmittedWithDocking(item.task.agent_plan?.run_docking ?? item.task.candidates.some((candidate) => candidate.vina !== null));
     setError(item.task.error);
@@ -209,7 +229,7 @@ function App() {
   };
 
   const backendLabel = backendMode === "live"
-    ? "Live GPU · RTX 3090"
+    ? "GPU 已就绪"
     : backendMode === "demo"
       ? "Demo Mode"
       : "Checking GPU…";
@@ -235,7 +255,7 @@ function App() {
           {history.length ? history.map((item) => (
             <button type="button" className="history-item" key={item.task.task_id} onClick={() => restoreHistory(item)}>
               <span><strong>{item.task.target}</strong><small>{new Date(item.savedAt).toLocaleString()}</small></span>
-              <span>{item.task.returned} molecules · {item.task.status}</span>
+              <span>{item.task.returned ?? item.task.candidates.length} molecules · {item.task.status}</span>
             </button>
           )) : <p>暂无本地历史。完成的任务会保存在当前浏览器中。</p>}
         </aside>
@@ -298,28 +318,28 @@ function App() {
 
           <section className="status-panel" aria-live="polite" aria-busy={running}>
             <div className="section-heading"><div><span>02</span><h2>任务进度</h2></div>{task && <code>{task.task_id.slice(0, 8)}</code>}</div>
-            {!task ? <div className="empty-state"><div className="molecule-orbit"><i /><i /><i /></div><strong>等待生成任务</strong><p>{mode === "agent" ? "输入自然语言需求，Agent 将展示工具执行状态。" : "提交后可在这里查看 GPU 冷启动、生成、评价与对接进度。"}</p></div> : (
+            {!task ? <div className="empty-state"><div className="molecule-orbit"><i /><i /><i /></div><strong>等待生成任务</strong><p>{mode === "agent" ? "输入自然语言需求，Agent 将展示工具执行状态。" : "提交后可在这里查看生成、评价与对接进度。"}</p></div> : (
               <div className="task-state">
                 <div className={`live-status ${taskState}`} role="status"><span className="live-status-dot" /><div><strong>{STATUS_LABELS[task.status] ?? task.status}</strong><small>{task.target} · {task.requested_by_agent ? `AGENT ${task.agent_plan?.parser ?? "RULES"}` : "FORM"}</small></div></div>
-                <div className="progress-meta"><span>{task.current_stage}</span><strong>{Math.round(task.progress)}%</strong></div>
-                <div className="progress-track" role="progressbar" aria-label="任务完成进度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(task.progress)}><div style={{ width: `${task.progress}%` }} /></div>
+                {(task.current_stage || task.progress !== null) && <div className="progress-meta">{task.current_stage && <span>{task.current_stage}</span>}{task.progress !== null && <strong>{Math.round(task.progress)}%</strong>}</div>}
+                {task.progress !== null && <div className="progress-track" role="progressbar" aria-label="任务完成进度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(task.progress)}><div style={{ width: `${task.progress}%` }} /></div>}
                 <ol className="stage-list">{visibleStages.map((stage) => { const index = DISPLAY_STAGES.indexOf(stage); const done = index < activeStageIndex || task.status === "completed"; const active = stage === activeStage && task.status !== "failed"; return <li className={`${done ? "done" : ""} ${active ? "active" : ""}`} key={stage}><span>{done ? "✓" : index + 1}</span><div><strong>{STAGE_LABELS[stage]}</strong><small>{stage}</small></div></li>; })}</ol>
-                {task.tool_trace.length > 0 && <div className="tool-trace"><h3>Agent Tools</h3><ul>{task.tool_trace.map((tool) => <li className={tool.status} key={tool.name}><span>{tool.status === "completed" ? "✓" : tool.status === "failed" ? "!" : tool.status === "skipped" ? "–" : "·"}</span><div><strong>{TOOL_LABELS[tool.name] ?? tool.name}</strong>{tool.detail && <small>{tool.detail}</small>}</div></li>)}</ul></div>}
-                <div className="task-counts"><span>生成 <strong>{task.generated}</strong></span><span>有效 <strong>{task.valid}</strong></span><span>返回 <strong>{task.returned}</strong></span></div>
+                <div className="tool-trace"><h3>Agent Tools</h3>{task.tool_trace.length > 0 ? <ul>{task.tool_trace.map((tool) => <li className={tool.status} key={tool.name}><span>{tool.status === "completed" ? "✓" : tool.status === "failed" ? "!" : tool.status === "skipped" ? "–" : "·"}</span><div><strong>{TOOL_LABELS[tool.name] ?? tool.name}</strong>{tool.detail && <small>{tool.detail}</small>}</div></li>)}</ul> : <p className="tool-trace__empty">等待后端返回工具执行状态…</p>}</div>
+                {[task.generated, task.valid, task.returned].some((value) => value !== null) && <div className="task-counts">{task.generated !== null && <span>生成 <strong>{task.generated}</strong></span>}{task.valid !== null && <span>有效 <strong>{task.valid}</strong></span>}{task.returned !== null && <span>返回 <strong>{task.returned}</strong></span>}</div>}
                 {task.summary && <p className="result-summary">{task.summary}</p>}
               </div>
             )}
-            {error && <div className="error-message" role="alert"><strong>任务异常</strong><span>{error}</span><small>若为冷启动，请等待后重试；生成或 Vina 失败不会隐藏真实错误。</small></div>}
+            {error && <div className="error-message" role="alert"><strong>任务异常</strong><span>{error}</span><small>任务状态错误不会切换到 Demo Mode；生成或 Vina 失败会保留真实错误。</small></div>}
           </section>
         </section>
 
         <section className="results-section">
           <div className="results-header"><div><p className="eyebrow">Ranked candidates</p><h2>候选分子</h2></div><div className="result-actions"><span>{task?.candidates.length ?? 0} molecules</span>{task?.candidates.length ? <><button type="button" onClick={() => exportTaskCsv(task)}>导出 CSV</button><button type="button" onClick={() => exportTaskJson(task)}>导出 JSON</button><button type="button" onClick={() => downloadAllSdf(task)} disabled={!task.candidates.some((item) => item.sdf)}>下载全部 SDF</button></> : null}</div></div>
-          {task?.candidates.length ? <div className="molecule-grid">{task.candidates.map((candidate) => <MoleculeCard candidate={candidate} key={`${candidate.rank}-${candidate.smiles}`} />)}</div> : <div className="results-empty"><span>∿</span><p>任务完成后，经过 RDKit 验证的候选分子将在这里以 2D/3D 卡片展示。</p></div>}
+          {task?.candidates.length ? <div className="molecule-grid">{task.candidates.map((candidate) => <MoleculeCard candidate={candidate} key={`${candidate.rank}-${candidate.smiles}`} />)}</div> : loading && task ? <TaskLoadingCard task={task} /> : <div className="results-empty"><span>∿</span><p>任务完成后，经过 RDKit 验证的候选分子将在这里以 2D/3D 卡片展示。</p></div>}
         </section>
       </main>
 
-      {pending && <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setPending(null); }}><section className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title"><p className="eyebrow">{backendMode === "demo" ? "Demo disclosure" : "GPU cost check"}</p><h2 id="confirm-title">{backendMode === "demo" ? "确认查看预计算结果？" : "确认提交生成任务？"}</h2><p>{pending.kind === "form" ? `${pending.target} · ${pending.count} 个候选 · Vina ${pending.docking ? "开启" : "关闭"}` : pending.prompt}</p><ul>{backendMode === "demo" ? <><li>当前为 Demo Mode，不会请求 RTX 3090 后端。</li><li>结果来自既有真实模型 SMILES，缺失指标显示 N/A。</li><li>本次不会执行 RDKit、分子生成或 Vina。</li></> : <><li>RTX 3090 服务可能需要冷启动，请保持页面开启。</li><li>公开 Demo 单次最多 5 个候选，提交后进入 15 秒冷却。</li><li>Vina 会增加执行时间；仅在确有需要时开启。</li></>}</ul><div><button type="button" className="secondary-button" onClick={() => setPending(null)}>返回修改</button><button type="button" className="primary-button" onClick={confirmSubmission}>确认</button></div></section></div>}
+      {pending && <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setPending(null); }}><section className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title"><p className="eyebrow">{backendMode === "demo" ? "Demo disclosure" : "GPU cost check"}</p><h2 id="confirm-title">{backendMode === "demo" ? "确认查看预计算结果？" : "确认提交生成任务？"}</h2><p>{pending.kind === "form" ? `${pending.target} · ${pending.count} 个候选 · Vina ${pending.docking ? "开启" : "关闭"}` : pending.prompt}</p><ul>{backendMode === "demo" ? <><li>当前为 Demo Mode，不会请求 RTX 3090 后端。</li><li>结果来自既有真实模型 SMILES，缺失指标显示 N/A。</li><li>本次不会执行 RDKit、分子生成或 Vina。</li></> : <><li>提交后页面会持续显示任务进度，请保持页面开启。</li><li>公开 Demo 单次最多 5 个候选，提交后进入 15 秒冷却。</li><li>Vina 会增加执行时间；仅在确有需要时开启。</li></>}</ul><div><button type="button" className="secondary-button" onClick={() => setPending(null)}>返回修改</button><button type="button" className="primary-button" onClick={confirmSubmission}>确认</button></div></section></div>}
 
       <footer><span>AI Drug Design Agent</span><span>Agent → ESM-2 → DLPS-E2PO → RDKit → AutoDock Vina</span></footer>
     </div>
