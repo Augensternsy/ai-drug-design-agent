@@ -8,6 +8,7 @@ export type Candidate = {
   logp: number | null;
   lipinski: boolean | null;
   vina: number | null;
+  molecule_svg?: string;
   structure_svg: string | null;
   sdf: string | null;
 };

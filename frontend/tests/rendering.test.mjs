@@ -39,3 +39,21 @@ test("completed candidate renders a MoleculeCard without refresh", async () => {
   assert.match(html, /0.610/);
   assert.match(html, /Lipinski PASS/);
 });
+
+test("MoleculeCard renders the backend molecule_svg in the real 2D view", async () => {
+  const { MoleculeCard } = await server.ssrLoadModule("/src/components/MoleculeCard.tsx");
+  const html = renderToStaticMarkup(React.createElement(MoleculeCard, {
+    candidate: {
+      rank: 1, smiles: "CCO", valid: true, qed: 0.61, sa: 2.3,
+      molwt: 46.07, logp: -0.3, lipinski: true, vina: -6.8,
+      molecule_svg: '<svg xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="5"/></svg>',
+      structure_svg: null, sdf: null,
+    },
+  }));
+
+  assert.match(html, /候选分子 1 的二维结构/);
+  assert.match(html, /data:image\/svg\+xml/);
+  assert.match(html, /缩小二维结构/);
+  assert.match(html, /Vina/);
+  assert.doesNotMatch(html, /二维结构暂不可用/);
+});

@@ -297,9 +297,15 @@ footer { margin: 0 clamp(22px, 5vw, 76px); padding: 24px 0 34px; display: flex; 
 .molecule-view-tabs { padding: 10px 12px 0; display: flex; gap: 7px; }
 .molecule-view-tabs button { min-height: 31px; background: #f5f4ee; }
 .molecule-view-tabs button.active { border-color: var(--green); background: var(--green); color: #fff; }
-.molecule-canvas { height: 280px; margin: 12px; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--line); background: var(--paper); }
-.molecule-canvas img { width: 100%; height: 100%; object-fit: contain; }
+.molecule-canvas { position: relative; height: 280px; margin: 12px; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--line); background: #fff; }
+.molecule-canvas img { width: 100%; height: 100%; object-fit: contain; transition: transform .2s ease; transform-origin: center; }
 .molecule-canvas > p { color: var(--muted); font-size: 10px; }
+.molecule-2d-viewport { position: absolute; inset: 0; display: grid; place-items: center; overflow: hidden; background: #fff; }
+.molecule-zoom-controls { position: absolute; z-index: 2; right: 10px; bottom: 10px; display: flex; overflow: hidden; border: 1px solid var(--line); border-radius: 3px; background: rgba(255,255,255,.94); box-shadow: 0 5px 16px rgba(31,48,39,.08); }
+.molecule-zoom-controls button { min-width: 34px; height: 30px; padding: 0 8px; border: 0; border-right: 1px solid var(--line); background: transparent; color: var(--ink); font: 500 9px "DM Mono", monospace; }
+.molecule-zoom-controls button:last-child { border-right: 0; }
+.molecule-zoom-controls button:not(:disabled):hover { background: var(--green); color: #fff; }
+.molecule-zoom-controls button:disabled { color: #b6bbb5; cursor: not-allowed; }
 .molecule-viewer-3d { width: 100%; height: 100%; position: relative; }
 .metric-grid { margin: 0; padding: 0 15px 14px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .metric-grid div { min-width: 0; padding: 9px 7px; background: #f5f4ee; }
