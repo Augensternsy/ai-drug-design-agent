@@ -9,6 +9,7 @@ export type Candidate = {
   lipinski: boolean | null;
   vina: number | null;
   molecule_svg?: string;
+  mol_block?: string;
   structure_svg: string | null;
   sdf: string | null;
 };

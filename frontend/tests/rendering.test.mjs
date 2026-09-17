@@ -57,3 +57,14 @@ test("MoleculeCard renders the backend molecule_svg in the real 2D view", async 
   assert.match(html, /Vina/);
   assert.doesNotMatch(html, /二维结构暂不可用/);
 });
+
+test("MoleculeViewer3D accepts a mol_block for the interactive 3D view", async () => {
+  const { MoleculeViewer3D } = await server.ssrLoadModule("/src/components/MoleculeViewer3D.tsx");
+  const html = renderToStaticMarkup(React.createElement(MoleculeViewer3D, {
+    molBlock: "mock mol block",
+    label: "候选分子 1 的三维构象",
+  }));
+
+  assert.match(html, /molecule-viewer-3d/);
+  assert.match(html, /候选分子 1 的三维构象/);
+});

@@ -36,6 +36,7 @@ test("polls running -> running -> completed and returns candidates", async () =>
     logp: -0.3,
     lipinski: true,
     vina: null,
+    mol_block: "mock mol block",
     structure_svg: null,
     sdf: null,
   };
@@ -54,6 +55,7 @@ test("polls running -> running -> completed and returns candidates", async () =>
   assert.deepEqual(waits, [2_000, 2_000]);
   assert.equal(result.progress, 100);
   assert.equal(result.candidates[0].smiles, "CCO");
+  assert.equal(result.candidates[0].mol_block, "mock mol block");
 });
 
 test("failed task stops polling and preserves backend error", async () => {

@@ -33,7 +33,7 @@ export function MoleculeCard({ candidate }: { candidate: Candidate }) {
 
       <div className="molecule-view-tabs" role="group" aria-label={`候选分子 ${candidate.rank} 视图`}>
         <button type="button" className={view === "2d" ? "active" : ""} onClick={() => setView("2d")}>查看 2D</button>
-        <button type="button" className={view === "3d" ? "active" : ""} onClick={() => setView("3d")} disabled={!candidate.sdf}>查看 3D</button>
+        <button type="button" className={view === "3d" ? "active" : ""} onClick={() => setView("3d")}>查看 3D</button>
       </div>
       <div className="molecule-canvas">
         {view === "2d" && (svgUrl ? <>
@@ -44,7 +44,9 @@ export function MoleculeCard({ candidate }: { candidate: Candidate }) {
             <button type="button" aria-label="放大二维结构" onClick={() => setZoom((value) => Math.min(2.5, value + 0.25))} disabled={zoom >= 2.5}>+</button>
           </div>
         </> : <p>二维结构生成中</p>)}
-        {view === "3d" && candidate.sdf && <MoleculeViewer3D sdf={candidate.sdf} label={`候选分子 ${candidate.rank} 的三维构象`} />}
+        {view === "3d" && (candidate.mol_block
+          ? <MoleculeViewer3D molBlock={candidate.mol_block} label={`候选分子 ${candidate.rank} 的三维构象`} />
+          : <p>3D 结构暂不可用</p>)}
       </div>
 
       <dl className="metric-grid">

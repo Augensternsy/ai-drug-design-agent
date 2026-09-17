@@ -38,6 +38,7 @@ function normalizeCandidate(value: unknown, index: number): Candidate | null {
     lipinski: nullableBoolean(candidate.lipinski),
     vina: finiteNumber(candidate.vina),
     molecule_svg: typeof candidate.molecule_svg === "string" ? candidate.molecule_svg : undefined,
+    mol_block: typeof candidate.mol_block === "string" ? candidate.mol_block : undefined,
     structure_svg: typeof candidate.structure_svg === "string" ? candidate.structure_svg : null,
     sdf: typeof candidate.sdf === "string" ? candidate.sdf : null,
   };
