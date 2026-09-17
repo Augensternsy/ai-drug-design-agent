@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { DEFAULT_AGENT_PLAN, normalizeAgentPlan } from "../src/agentPlan.ts";
 import { HEALTH_TIMEOUT_MS, checkBackendHealth } from "../src/backend.ts";
 import { createVerifiedDemoTask } from "../src/demo.ts";
 
@@ -46,4 +47,22 @@ test("Demo Mode exposes verified SMILES with unavailable metrics marked as null"
   assert.equal(task.candidates[0].sa, null);
   assert.equal(task.candidates[0].vina, null);
   assert.match(task.summary ?? "", /未调用 RTX 3090、RDKit 或 Vina/);
+});
+
+test("Agent plan defaults are safe when the submit response omits plan", () => {
+  const plan = normalizeAgentPlan(undefined);
+
+  assert.deepEqual(
+    { target: plan.target, num_samples: plan.num_samples, run_docking: plan.run_docking },
+    { target: "", num_samples: 1, run_docking: false },
+  );
+  assert.equal(DEFAULT_AGENT_PLAN.run_docking, false);
+});
+
+test("Agent plan keeps supplied values while defaulting missing run_docking", () => {
+  const plan = normalizeAgentPlan({ target: "ESR1", num_samples: 3 });
+
+  assert.equal(plan.target, "ESR1");
+  assert.equal(plan.num_samples, 3);
+  assert.equal(plan.run_docking, false);
 });

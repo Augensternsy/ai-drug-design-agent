@@ -55,7 +55,7 @@ export type GenerateResponse = {
   message: string;
 };
 
-export type AgentGenerateResponse = GenerateResponse & { plan: AgentPlan };
+export type AgentGenerateResponse = GenerateResponse & { plan?: Partial<AgentPlan> | null };
 
 export type StoredTask = {
   savedAt: string;

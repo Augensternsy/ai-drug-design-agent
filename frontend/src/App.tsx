@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { normalizeAgentPlan } from "./agentPlan";
 import { API_BASE_URL, apiRequest } from "./api";
 import { checkBackendHealth, type BackendMode } from "./backend";
 import { MoleculeCard } from "./components/MoleculeCard";
@@ -48,11 +49,11 @@ function displayStageFor(status: string): DisplayStage {
   return "evaluating";
 }
 
-function emptyTask(response: GenerateResponse, target: string, requested: number, agent = false): Task {
+function emptyTask(response: GenerateResponse, target: string, requested: number, agent = false, agentPlan: Task["agent_plan"] = null): Task {
   return {
     task_id: response.task_id, target, status: response.status, progress: null, current_stage: response.message,
     error: null, requested, generated: null, valid: null, returned: null, candidates: [], requested_by_agent: agent,
-    agent_plan: "plan" in response ? (response as AgentGenerateResponse).plan : null, tool_trace: [], summary: null,
+    agent_plan: agentPlan, tool_trace: [], summary: null,
   };
 }
 
@@ -205,9 +206,10 @@ function App() {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt: submission.prompt }),
         });
-        setSubmittedWithDocking(response.plan.run_docking);
+        const agentPlan = normalizeAgentPlan(response.plan);
+        setSubmittedWithDocking(agentPlan.run_docking);
         setTaskId(response.task_id);
-        setTask(emptyTask(response, response.plan.target, response.plan.num_samples, true));
+        setTask(emptyTask(response, agentPlan.target, agentPlan.num_samples, true, agentPlan));
         setLoading(true);
       }
       setCooldown(COOLDOWN_SECONDS);
