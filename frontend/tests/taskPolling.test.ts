@@ -25,7 +25,7 @@ function task(status: string, overrides: Partial<Task> = {}): Task {
   };
 }
 
-test("polls running -> running -> completed and returns candidates", async () => {
+test("polls running -> running -> completed and returns candidates with the protein structure", async () => {
   const candidate = {
     rank: 1,
     smiles: "CCO",
@@ -40,7 +40,8 @@ test("polls running -> running -> completed and returns candidates", async () =>
     structure_svg: null,
     sdf: null,
   };
-  const responses = [task("running"), task("processing", { progress: 75 }), task("completed", { candidates: [candidate] })];
+  const proteinPdb = "ATOM      1  N   ALA A   1      11.104  13.207   9.560  1.00 20.00           N";
+  const responses = [task("running"), task("processing", { progress: 75 }), task("completed", { candidates: [candidate], protein_pdb: proteinPdb })];
   const updates: Task[] = [];
   const waits: number[] = [];
 
@@ -56,6 +57,7 @@ test("polls running -> running -> completed and returns candidates", async () =>
   assert.equal(result.progress, 100);
   assert.equal(result.candidates[0].smiles, "CCO");
   assert.equal(result.candidates[0].mol_block, "mock mol block");
+  assert.equal(result.protein_pdb, proteinPdb);
 });
 
 test("task polling preserves Agent Tools returned by the backend", async () => {

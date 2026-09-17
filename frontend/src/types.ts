@@ -45,6 +45,7 @@ export type AgentTool = {
 export type Task = {
   task_id: string;
   target: string;
+  protein_pdb?: string | null;
   status: string;
   progress: number | null;
   current_stage: string;

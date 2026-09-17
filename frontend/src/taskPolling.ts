@@ -76,6 +76,7 @@ export function normalizeTaskResponse(value: unknown, fallback?: Task): Task {
   return {
     task_id: taskId,
     target: typeof payload.target === "string" ? payload.target : fallback?.target ?? "",
+    protein_pdb: typeof payload.protein_pdb === "string" ? payload.protein_pdb : fallback?.protein_pdb ?? null,
     status,
     progress,
     current_stage: typeof payload.current_stage === "string" ? payload.current_stage : fallback?.current_stage ?? "",

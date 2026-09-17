@@ -350,7 +350,7 @@ function App() {
               {analysisReport.bestCandidate.vina != null && <div><span>Vina</span><strong>{analysisReport.bestCandidate.vina.toFixed(2)} kcal/mol</strong></div>}
             </div>
           </section>}
-          {rankedCandidates.length ? <div className="molecule-grid">{rankedCandidates.map((candidate) => <MoleculeCard candidate={candidate} key={`${candidate.rank}-${candidate.smiles}`} />)}</div> : loading && task ? <TaskLoadingCard task={task} /> : <div className="results-empty"><span>∿</span><p>任务完成后，经过 RDKit 验证的候选分子将在这里以 2D/3D 卡片展示。</p></div>}
+          {rankedCandidates.length ? <div className="molecule-grid">{rankedCandidates.map((candidate) => <MoleculeCard candidate={candidate} proteinPdb={task?.protein_pdb} key={`${candidate.rank}-${candidate.smiles}`} />)}</div> : loading && task ? <TaskLoadingCard task={task} /> : <div className="results-empty"><span>∿</span><p>任务完成后，经过 RDKit 验证的候选分子将在这里以 2D/3D 卡片展示。</p></div>}
         </section>
       </main>
 

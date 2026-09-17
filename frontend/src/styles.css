@@ -304,7 +304,7 @@ footer { margin: 0 clamp(22px, 5vw, 76px); padding: 24px 0 34px; display: flex; 
 .molecule-card__header { min-height: 56px; padding: 13px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
 .molecule-card__header > div { display: flex; align-items: center; gap: 10px; }
 .molecule-card__header strong { font-size: 12px; }
-.molecule-view-tabs { padding: 10px 12px 0; display: flex; gap: 7px; }
+.molecule-view-tabs { padding: 10px 12px 0; display: flex; flex-wrap: wrap; gap: 7px; }
 .molecule-view-tabs button { min-height: 31px; background: #f5f4ee; }
 .molecule-view-tabs button.active { border-color: var(--green); background: var(--green); color: #fff; }
 .molecule-canvas { position: relative; height: 280px; margin: 12px; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--line); background: #fff; }

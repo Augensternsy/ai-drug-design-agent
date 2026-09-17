@@ -36,6 +36,7 @@ test("completed candidate renders a MoleculeCard without refresh", async () => {
 
   assert.match(html, /候选分子/);
   assert.match(html, /Rank #1/);
+  assert.match(html, /结合模式/);
   assert.match(html, /CCO/);
   assert.match(html, /0.610/);
   assert.match(html, /Lipinski PASS/);
@@ -70,4 +71,17 @@ test("MoleculeViewer3D accepts a mol_block for the interactive 3D view", async (
 
   assert.match(html, /molecule-viewer-3d/);
   assert.match(html, /候选分子 1 的三维构象/);
+  assert.match(html, /data-viewer-mode="ligand"/);
+});
+
+test("MoleculeViewer3D marks a protein-ligand complex when protein PDB is provided", async () => {
+  const { MoleculeViewer3D } = await server.ssrLoadModule("/src/components/MoleculeViewer3D.tsx");
+  const html = renderToStaticMarkup(React.createElement(MoleculeViewer3D, {
+    molBlock: "mock mol block",
+    proteinPdb: "ATOM mock protein",
+    label: "候选分子 1 的蛋白-配体结合模式",
+  }));
+
+  assert.match(html, /data-viewer-mode="complex"/);
+  assert.match(html, /蛋白-配体结合模式/);
 });

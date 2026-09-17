@@ -7,8 +7,8 @@ function metric(value: number | null, digits = 3) {
   return value === null ? "N/A" : value.toFixed(digits);
 }
 
-export function MoleculeCard({ candidate }: { candidate: Candidate }) {
-  const [view, setView] = useState<"2d" | "3d">("2d");
+export function MoleculeCard({ candidate, proteinPdb }: { candidate: Candidate; proteinPdb?: string | null }) {
+  const [viewMode, setViewMode] = useState<"2d" | "3d" | "complex">("2d");
   const [copied, setCopied] = useState(false);
   const [zoom, setZoom] = useState(1);
   const moleculeSvg = candidate.molecule_svg ?? candidate.structure_svg;
@@ -32,11 +32,12 @@ export function MoleculeCard({ candidate }: { candidate: Candidate }) {
       </header>
 
       <div className="molecule-view-tabs" role="group" aria-label={`候选分子 ${candidate.rank} 视图`}>
-        <button type="button" className={view === "2d" ? "active" : ""} onClick={() => setView("2d")}>查看 2D</button>
-        <button type="button" className={view === "3d" ? "active" : ""} onClick={() => setView("3d")}>查看 3D</button>
+        <button type="button" className={viewMode === "2d" ? "active" : ""} onClick={() => setViewMode("2d")}>查看 2D</button>
+        <button type="button" className={viewMode === "3d" ? "active" : ""} onClick={() => setViewMode("3d")}>查看 3D</button>
+        <button type="button" className={viewMode === "complex" ? "active" : ""} onClick={() => setViewMode("complex")}>结合模式</button>
       </div>
       <div className="molecule-canvas">
-        {view === "2d" && (svgUrl ? <>
+        {viewMode === "2d" && (svgUrl ? <>
           <div className="molecule-2d-viewport"><img src={svgUrl} alt={`候选分子 ${candidate.rank} 的二维结构`} style={{ transform: `scale(${zoom})` }} /></div>
           <div className="molecule-zoom-controls" role="group" aria-label="二维结构缩放">
             <button type="button" aria-label="缩小二维结构" onClick={() => setZoom((value) => Math.max(0.75, value - 0.25))} disabled={zoom <= 0.75}>−</button>
@@ -44,8 +45,11 @@ export function MoleculeCard({ candidate }: { candidate: Candidate }) {
             <button type="button" aria-label="放大二维结构" onClick={() => setZoom((value) => Math.min(2.5, value + 0.25))} disabled={zoom >= 2.5}>+</button>
           </div>
         </> : <p>二维结构生成中</p>)}
-        {view === "3d" && (candidate.mol_block
+        {viewMode === "3d" && (candidate.mol_block
           ? <MoleculeViewer3D molBlock={candidate.mol_block} label={`候选分子 ${candidate.rank} 的三维构象`} />
+          : <p>3D 结构暂不可用</p>)}
+        {viewMode === "complex" && (candidate.mol_block
+          ? <MoleculeViewer3D molBlock={candidate.mol_block} proteinPdb={proteinPdb} label={proteinPdb ? `候选分子 ${candidate.rank} 的蛋白-配体结合模式` : `候选分子 ${candidate.rank} 的三维构象`} />
           : <p>3D 结构暂不可用</p>)}
       </div>
 
