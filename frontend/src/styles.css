@@ -312,6 +312,7 @@ footer { margin: 0 clamp(22px, 5vw, 76px); padding: 24px 0 34px; display: flex; 
 .metric-grid dt { color: var(--muted); font: 500 8px "DM Mono", monospace; text-transform: uppercase; }
 .metric-grid dd { margin: 5px 0 0; overflow-wrap: anywhere; font: 500 10px "DM Mono", monospace; }
 .metric-grid .vina-score { font-size: 9px; }
+.metric-grid .vina-score.unavailable { color: var(--muted); font-size: 8px; }
 .smiles-block { margin: 0 15px; padding: 12px; border: 1px solid var(--line); background: #f8f8f4; }
 .smiles-block span { display: block; margin-bottom: 7px; color: var(--muted); font: 500 8px "DM Mono", monospace; }
 .smiles-block code { display: block; overflow-wrap: anywhere; word-break: break-word; font-size: 10px; line-height: 1.65; user-select: all; }

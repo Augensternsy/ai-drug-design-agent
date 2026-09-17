@@ -38,6 +38,7 @@ test("completed candidate renders a MoleculeCard without refresh", async () => {
   assert.match(html, /CCO/);
   assert.match(html, /0.610/);
   assert.match(html, /Lipinski PASS/);
+  assert.match(html, /Not evaluated/);
 });
 
 test("MoleculeCard renders the backend molecule_svg in the real 2D view", async () => {
@@ -55,6 +56,7 @@ test("MoleculeCard renders the backend molecule_svg in the real 2D view", async 
   assert.match(html, /data:image\/svg\+xml/);
   assert.match(html, /缩小二维结构/);
   assert.match(html, /Vina/);
+  assert.match(html, /-6.80 kcal\/mol/);
   assert.doesNotMatch(html, /二维结构暂不可用/);
 });
 

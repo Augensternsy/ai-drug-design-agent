@@ -54,7 +54,7 @@ export function MoleculeCard({ candidate }: { candidate: Candidate }) {
         <div><dt>SA</dt><dd>{metric(candidate.sa)}</dd></div>
         <div><dt>MolWt</dt><dd>{metric(candidate.molwt, 1)}</dd></div>
         <div><dt>LogP</dt><dd>{metric(candidate.logp, 2)}</dd></div>
-        {candidate.vina !== null && <div><dt>Vina</dt><dd className="vina-score">{candidate.vina.toFixed(2)} kcal/mol</dd></div>}
+        <div><dt>Vina</dt><dd className={candidate.vina == null ? "vina-score unavailable" : "vina-score"}>{candidate.vina == null ? "Not evaluated" : `${candidate.vina.toFixed(2)} kcal/mol`}</dd></div>
       </dl>
 
       <div className="smiles-block"><span>SMILES</span><code>{candidate.smiles}</code></div>

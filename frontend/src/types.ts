@@ -7,9 +7,9 @@ export type Candidate = {
   molwt: number | null;
   logp: number | null;
   lipinski: boolean | null;
-  vina: number | null;
+  vina?: number | null;
   molecule_svg?: string;
-  mol_block?: string;
+  mol_block?: string | null;
   structure_svg: string | null;
   sdf: string | null;
 };
