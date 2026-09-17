@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { normalizeAgentPlan } from "./agentPlan";
+import { agentToolStatusIcon, displayAgentTools } from "./agentTools";
 import { API_BASE_URL, apiRequest } from "./api";
 import { checkBackendHealth, type BackendMode } from "./backend";
 import { MoleculeCard } from "./components/MoleculeCard";
@@ -30,11 +31,6 @@ const STATUS_LABELS: Record<string, string> = {
   loading: "正在生成候选分子", encoding: "正在生成候选分子", generating: "正在生成候选分子",
   evaluating: "正在生成候选分子", docking: "正在生成候选分子", ranking: "正在生成候选分子",
   completed: "候选分子已生成", failed: "任务执行失败",
-};
-
-const TOOL_LABELS: Record<string, string> = {
-  resolve_target: "解析靶点", generate_molecules: "DLPS-E2PO 生成", evaluate_properties: "RDKit 评价",
-  molecular_docking: "AutoDock Vina", rank_candidates: "候选排序", generate_result_summary: "结果总结",
 };
 
 type PendingSubmission =
@@ -80,6 +76,7 @@ function App() {
 
   const running = submitting || loading;
   const hasDownloadableSdf = task?.candidates.some((candidate) => Boolean(candidate.mol_block)) ?? false;
+  const visibleAgentTools = displayAgentTools(task?.tools);
   const activeStage = displayStageFor(task?.status ?? "queued");
   const activeStageIndex = DISPLAY_STAGES.indexOf(activeStage);
   const taskState = task?.status === "failed" ? "failed" : task?.status === "completed" ? "complete" : "running";
@@ -327,7 +324,7 @@ function App() {
                 {(task.current_stage || task.progress !== null) && <div className="progress-meta">{task.current_stage && <span>{task.current_stage}</span>}{task.progress !== null && <strong>{Math.round(task.progress)}%</strong>}</div>}
                 {task.progress !== null && <div className="progress-track" role="progressbar" aria-label="任务完成进度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(task.progress)}><div style={{ width: `${task.progress}%` }} /></div>}
                 <ol className="stage-list">{visibleStages.map((stage) => { const index = DISPLAY_STAGES.indexOf(stage); const done = index < activeStageIndex || task.status === "completed"; const active = stage === activeStage && task.status !== "failed"; return <li className={`${done ? "done" : ""} ${active ? "active" : ""}`} key={stage}><span>{done ? "✓" : index + 1}</span><div><strong>{STAGE_LABELS[stage]}</strong><small>{stage}</small></div></li>; })}</ol>
-                <div className="tool-trace"><h3>Agent Tools</h3>{task.tool_trace.length > 0 ? <ul>{task.tool_trace.map((tool) => <li className={tool.status} key={tool.name}><span>{tool.status === "completed" ? "✓" : tool.status === "failed" ? "!" : tool.status === "skipped" ? "–" : "·"}</span><div><strong>{TOOL_LABELS[tool.name] ?? tool.name}</strong>{tool.detail && <small>{tool.detail}</small>}</div></li>)}</ul> : <p className="tool-trace__empty">等待后端返回工具执行状态…</p>}</div>
+                <div className="tool-trace"><h3>Agent Tools</h3><ul>{visibleAgentTools.map((tool) => <li className={tool.status} key={tool.name}><span aria-hidden="true">{agentToolStatusIcon(tool.status)}</span><div><strong>{tool.name}</strong><small>{tool.status}</small></div></li>)}</ul></div>
                 {[task.generated, task.valid, task.returned].some((value) => value !== null) && <div className="task-counts">{task.generated !== null && <span>生成 <strong>{task.generated}</strong></span>}{task.valid !== null && <span>有效 <strong>{task.valid}</strong></span>}{task.returned !== null && <span>返回 <strong>{task.returned}</strong></span>}</div>}
                 {task.summary && <p className="result-summary">{task.summary}</p>}
               </div>

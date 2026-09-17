@@ -58,6 +58,16 @@ test("polls running -> running -> completed and returns candidates", async () =>
   assert.equal(result.candidates[0].mol_block, "mock mol block");
 });
 
+test("task polling preserves Agent Tools returned by the backend", async () => {
+  const result = await pollTaskUntilTerminal("task-123", {
+    fetchTask: async () => task("completed", { tools: [{ name: "esm2_encoding", status: "completed" }] }),
+    onUpdate: () => undefined,
+    sleep: async () => undefined,
+  });
+
+  assert.deepEqual(result.tools, [{ name: "esm2_encoding", status: "completed" }]);
+});
+
 test("failed task stops polling and preserves backend error", async () => {
   let requests = 0;
   const result = await pollTaskUntilTerminal("task-123", {

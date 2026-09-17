@@ -31,6 +31,11 @@ export type ToolExecution = {
   detail: string | null;
 };
 
+export type AgentTool = {
+  name: string;
+  status: string;
+};
+
 export type Task = {
   task_id: string;
   target: string;
@@ -45,6 +50,7 @@ export type Task = {
   candidates: Candidate[];
   requested_by_agent: boolean;
   agent_plan: AgentPlan | null;
+  tools?: AgentTool[];
   tool_trace: ToolExecution[];
   summary: string | null;
 };

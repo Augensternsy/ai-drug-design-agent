@@ -1,4 +1,4 @@
-import type { Candidate, Task, ToolExecution } from "./types";
+import type { AgentTool, Candidate, Task, ToolExecution } from "./types";
 
 export const TASK_POLL_INTERVAL_MS = 2_000;
 export const TASK_POLL_TIMEOUT_MS = 120_000;
@@ -51,6 +51,17 @@ function normalizeTools(value: unknown): ToolExecution[] {
   ));
 }
 
+function normalizeAgentTools(value: unknown): AgentTool[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const tool = item as Record<string, unknown>;
+    return typeof tool.name === "string" && typeof tool.status === "string"
+      ? [{ name: tool.name, status: tool.status.toLowerCase() }]
+      : [];
+  });
+}
+
 export function normalizeTaskResponse(value: unknown, fallback?: Task): Task {
   if (!value || typeof value !== "object") throw new Error("任务状态响应格式无效。");
   const payload = value as Record<string, unknown>;
@@ -76,6 +87,7 @@ export function normalizeTaskResponse(value: unknown, fallback?: Task): Task {
     candidates,
     requested_by_agent: typeof payload.requested_by_agent === "boolean" ? payload.requested_by_agent : fallback?.requested_by_agent ?? false,
     agent_plan: payload.agent_plan && typeof payload.agent_plan === "object" ? payload.agent_plan as Task["agent_plan"] : fallback?.agent_plan ?? null,
+    tools: Array.isArray(payload.tools) ? normalizeAgentTools(payload.tools) : fallback?.tools,
     tool_trace: Array.isArray(payload.tool_trace) ? normalizeTools(payload.tool_trace) : fallback?.tool_trace ?? [],
     summary: typeof payload.summary === "string" ? payload.summary : fallback?.summary ?? null,
   };

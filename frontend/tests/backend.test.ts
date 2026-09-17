@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { DEFAULT_AGENT_PLAN, normalizeAgentPlan } from "../src/agentPlan.ts";
+import { agentToolStatusIcon, displayAgentTools } from "../src/agentTools.ts";
 import { HEALTH_TIMEOUT_MS, checkBackendHealth } from "../src/backend.ts";
 import { createVerifiedDemoTask } from "../src/demo.ts";
 import type { Candidate } from "../src/types.ts";
@@ -84,4 +85,22 @@ test("combined SDF includes every available mol_block exactly once", () => {
 
   assert.equal(content, "first\nM  END\n$$$$\nsecond\nM  END\n$$$$\n");
   assert.equal(content.match(/\$\$\$\$/g)?.length, 2);
+});
+
+test("Agent Tools map backend names and statuses to the five display steps", () => {
+  const tools = displayAgentTools([
+    { name: "esm2_encoding", status: "completed" },
+    { name: "generate_molecules", status: "running" },
+    { name: "rdkit_validation", status: "failed" },
+  ]);
+
+  assert.deepEqual(tools.map((tool) => tool.name), [
+    "ESM-2 Protein Encoding",
+    "DLPS-E2PO Generation",
+    "RDKit Validation",
+    "Property Evaluation",
+    "AutoDock Vina Docking",
+  ]);
+  assert.deepEqual(tools.map((tool) => tool.status), ["completed", "running", "failed", "pending", "pending"]);
+  assert.deepEqual(tools.map((tool) => agentToolStatusIcon(tool.status)), ["✓", "⏳", "✗", "○", "○"]);
 });
