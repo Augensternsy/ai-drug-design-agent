@@ -79,6 +79,7 @@ function App() {
   const lastSavedTask = useRef<string | null>(null);
 
   const running = submitting || loading;
+  const hasDownloadableSdf = task?.candidates.some((candidate) => Boolean(candidate.mol_block)) ?? false;
   const activeStage = displayStageFor(task?.status ?? "queued");
   const activeStageIndex = DISPLAY_STAGES.indexOf(activeStage);
   const taskState = task?.status === "failed" ? "failed" : task?.status === "completed" ? "complete" : "running";
@@ -336,7 +337,7 @@ function App() {
         </section>
 
         <section className="results-section">
-          <div className="results-header"><div><p className="eyebrow">Ranked candidates</p><h2>候选分子</h2></div><div className="result-actions"><span>{task?.candidates.length ?? 0} molecules</span>{task?.candidates.length ? <><button type="button" onClick={() => exportTaskCsv(task)}>导出 CSV</button><button type="button" onClick={() => exportTaskJson(task)}>导出 JSON</button><button type="button" onClick={() => downloadAllSdf(task)} disabled={!task.candidates.some((item) => item.sdf)}>下载全部 SDF</button></> : null}</div></div>
+          <div className="results-header"><div><p className="eyebrow">Ranked candidates</p><h2>候选分子</h2></div><div className="result-actions"><span>{task?.candidates.length ?? 0} molecules</span>{task?.candidates.length ? <><button type="button" onClick={() => exportTaskCsv(task)}>导出 CSV</button><button type="button" onClick={() => exportTaskJson(task)}>导出 JSON</button><button type="button" onClick={() => downloadAllSdf(task)} disabled={!hasDownloadableSdf} title={hasDownloadableSdf ? "合并下载所有可用的 SDF 结构" : "当前结果没有可下载的 3D 结构"}>下载全部 SDF</button></> : null}</div></div>
           {task?.candidates.length ? <div className="molecule-grid">{task.candidates.map((candidate) => <MoleculeCard candidate={candidate} key={`${candidate.rank}-${candidate.smiles}`} />)}</div> : loading && task ? <TaskLoadingCard task={task} /> : <div className="results-empty"><span>∿</span><p>任务完成后，经过 RDKit 验证的候选分子将在这里以 2D/3D 卡片展示。</p></div>}
         </section>
       </main>

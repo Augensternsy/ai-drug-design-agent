@@ -60,7 +60,7 @@ export function MoleculeCard({ candidate }: { candidate: Candidate }) {
       <div className="smiles-block"><span>SMILES</span><code>{candidate.smiles}</code></div>
       <div className="card-actions">
         <button type="button" onClick={copySmiles}>{copied ? "已复制" : "Copy SMILES"}</button>
-        <button type="button" onClick={() => downloadCandidateSdf(candidate)} disabled={!candidate.sdf}>下载 SDF</button>
+        <button type="button" onClick={() => downloadCandidateSdf(candidate)} disabled={!candidate.mol_block} title={candidate.mol_block ? "下载该候选分子的 SDF 文件" : "当前候选没有可用的 3D 结构"}>{candidate.mol_block ? "下载 SDF" : "SDF 不可用"}</button>
       </div>
     </article>
   );

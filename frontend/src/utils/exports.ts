@@ -16,8 +16,26 @@ function csvCell(value: unknown): string {
   return `"${text.replace(/"/g, '""')}"`;
 }
 
-export function downloadCandidateSdf(candidate: Candidate) {
-  if (candidate.sdf) downloadBlob(candidate.sdf, "chemical/x-mdl-sdfile", `candidate-${candidate.rank}.sdf`);
+function molBlockToSdfRecord(molBlock: string): string | null {
+  const normalized = molBlock.replace(/\r\n?/g, "\n").trimEnd();
+  if (!normalized.trim()) return null;
+  const withoutExistingDelimiter = normalized.replace(/(?:\n)?\$\$\$\$$/, "").trimEnd();
+  return `${withoutExistingDelimiter}\n$$$$\n`;
+}
+
+export function candidateSdfContent(candidate: Candidate): string | null {
+  return candidate.mol_block ? molBlockToSdfRecord(candidate.mol_block) : null;
+}
+
+export function combinedCandidatesSdf(candidates: Candidate[]): string {
+  return candidates.map(candidateSdfContent).filter((record): record is string => record !== null).join("");
+}
+
+export function downloadCandidateSdf(candidate: Candidate): boolean {
+  const content = candidateSdfContent(candidate);
+  if (!content) return false;
+  downloadBlob(content, "chemical/x-mdl-sdfile;charset=utf-8", `candidate-${candidate.rank}.sdf`);
+  return true;
 }
 
 export function exportTaskJson(task: Task) {
@@ -31,6 +49,6 @@ export function exportTaskCsv(task: Task) {
 }
 
 export function downloadAllSdf(task: Task) {
-  const records = task.candidates.map((item) => item.sdf).filter(Boolean).join("");
-  if (records) downloadBlob(records, "chemical/x-mdl-sdfile", `${task.target}-${task.task_id.slice(0, 8)}-candidates.sdf`);
+  const content = combinedCandidatesSdf(task.candidates);
+  if (content) downloadBlob(content, "chemical/x-mdl-sdfile;charset=utf-8", "combined_candidates.sdf");
 }

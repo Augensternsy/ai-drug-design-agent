@@ -4,6 +4,8 @@ import test from "node:test";
 import { DEFAULT_AGENT_PLAN, normalizeAgentPlan } from "../src/agentPlan.ts";
 import { HEALTH_TIMEOUT_MS, checkBackendHealth } from "../src/backend.ts";
 import { createVerifiedDemoTask } from "../src/demo.ts";
+import type { Candidate } from "../src/types.ts";
+import { candidateSdfContent, combinedCandidatesSdf } from "../src/utils/exports.ts";
 
 test("health success selects the live RTX 3090 backend", async () => {
   let requestedUrl = "";
@@ -65,4 +67,21 @@ test("Agent plan keeps supplied values while defaulting missing run_docking", ()
   assert.equal(plan.target, "ESR1");
   assert.equal(plan.num_samples, 3);
   assert.equal(plan.run_docking, false);
+});
+
+test("single candidate SDF download content is built from mol_block", () => {
+  const content = candidateSdfContent({ rank: 1, mol_block: "molecule\r\n  RDKit\r\nM  END\r\n" } as Candidate);
+
+  assert.equal(content, "molecule\n  RDKit\nM  END\n$$$$\n");
+});
+
+test("combined SDF includes every available mol_block exactly once", () => {
+  const content = combinedCandidatesSdf([
+    { rank: 1, mol_block: "first\nM  END" },
+    { rank: 2, mol_block: null },
+    { rank: 3, mol_block: "second\nM  END\n$$$$" },
+  ] as Candidate[]);
+
+  assert.equal(content, "first\nM  END\n$$$$\nsecond\nM  END\n$$$$\n");
+  assert.equal(content.match(/\$\$\$\$/g)?.length, 2);
 });
