@@ -35,6 +35,7 @@ test("completed candidate renders a MoleculeCard without refresh", async () => {
   }));
 
   assert.match(html, /候选分子/);
+  assert.match(html, /Rank #1/);
   assert.match(html, /CCO/);
   assert.match(html, /0.610/);
   assert.match(html, /Lipinski PASS/);

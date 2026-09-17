@@ -4,6 +4,7 @@ import test from "node:test";
 import { DEFAULT_AGENT_PLAN, normalizeAgentPlan } from "../src/agentPlan.ts";
 import { agentToolStatusIcon, displayAgentTools } from "../src/agentTools.ts";
 import { HEALTH_TIMEOUT_MS, checkBackendHealth } from "../src/backend.ts";
+import { buildAnalysisReport, rankCandidates } from "../src/candidateRanking.ts";
 import { createVerifiedDemoTask } from "../src/demo.ts";
 import type { Candidate } from "../src/types.ts";
 import { candidateSdfContent, combinedCandidatesSdf } from "../src/utils/exports.ts";
@@ -103,4 +104,36 @@ test("Agent Tools map backend names and statuses to the five display steps", () 
   ]);
   assert.deepEqual(tools.map((tool) => tool.status), ["completed", "running", "failed", "pending", "pending"]);
   assert.deepEqual(tools.map((tool) => agentToolStatusIcon(tool.status)), ["✓", "⏳", "✗", "○", "○"]);
+});
+
+test("candidate ranking prioritizes Vina, then higher QED and lower SA without mutating input", () => {
+  const candidates = [
+    { rank: 8, smiles: "A", vina: -7.1, qed: 0.95, sa: 1.2 },
+    { rank: 7, smiles: "B", vina: -8.2, qed: 0.55, sa: 3.4 },
+    { rank: 6, smiles: "C", vina: null, qed: 0.92, sa: 3.1 },
+    { rank: 5, smiles: "D", vina: null, qed: 0.92, sa: 2.2 },
+  ] as Candidate[];
+
+  const ranked = rankCandidates(candidates);
+
+  assert.deepEqual(ranked.map((candidate) => candidate.smiles), ["B", "A", "D", "C"]);
+  assert.deepEqual(ranked.map((candidate) => candidate.rank), [1, 2, 3, 4]);
+  assert.deepEqual(candidates.map((candidate) => candidate.rank), [8, 7, 6, 5]);
+});
+
+test("analysis report uses the ranked best candidate and real generated count", () => {
+  const ranked = rankCandidates([
+    { rank: 2, smiles: "CCO", vina: null, qed: 0.61, sa: 2.3 },
+    { rank: 1, smiles: "CCN", vina: -7.9, qed: 0.51, sa: 3.1 },
+  ] as Candidate[]);
+  const report = buildAnalysisReport({
+    task_id: "task-1", target: "ESR1", status: "completed", progress: 100,
+    current_stage: "completed", error: null, requested: 2, generated: 5,
+    valid: 2, returned: 2, candidates: ranked, requested_by_agent: false,
+    agent_plan: null, tool_trace: [], summary: null,
+  }, ranked);
+
+  assert.equal(report?.target, "ESR1");
+  assert.equal(report?.generated, 5);
+  assert.equal(report?.bestCandidate.smiles, "CCN");
 });

@@ -3,6 +3,7 @@ import { normalizeAgentPlan } from "./agentPlan";
 import { agentToolStatusIcon, displayAgentTools } from "./agentTools";
 import { API_BASE_URL, apiRequest } from "./api";
 import { checkBackendHealth, type BackendMode } from "./backend";
+import { buildAnalysisReport, rankCandidates } from "./candidateRanking";
 import { MoleculeCard } from "./components/MoleculeCard";
 import { TaskLoadingCard } from "./components/TaskLoadingCard";
 import { createVerifiedDemoTask, parseDemoPrompt } from "./demo";
@@ -75,7 +76,10 @@ function App() {
   const lastSavedTask = useRef<string | null>(null);
 
   const running = submitting || loading;
-  const hasDownloadableSdf = task?.candidates.some((candidate) => Boolean(candidate.mol_block)) ?? false;
+  const rankedCandidates = useMemo(() => rankCandidates(task?.candidates ?? []), [task?.candidates]);
+  const analysisReport = useMemo(() => buildAnalysisReport(task, rankedCandidates), [task, rankedCandidates]);
+  const rankedTask = useMemo(() => task ? { ...task, candidates: rankedCandidates } : null, [task, rankedCandidates]);
+  const hasDownloadableSdf = rankedCandidates.some((candidate) => Boolean(candidate.mol_block));
   const visibleAgentTools = displayAgentTools(task?.tools);
   const activeStage = displayStageFor(task?.status ?? "queued");
   const activeStageIndex = DISPLAY_STAGES.indexOf(activeStage);
@@ -334,8 +338,19 @@ function App() {
         </section>
 
         <section className="results-section">
-          <div className="results-header"><div><p className="eyebrow">Ranked candidates</p><h2>候选分子</h2></div><div className="result-actions"><span>{task?.candidates.length ?? 0} molecules</span>{task?.candidates.length ? <><button type="button" onClick={() => exportTaskCsv(task)}>导出 CSV</button><button type="button" onClick={() => exportTaskJson(task)}>导出 JSON</button><button type="button" onClick={() => downloadAllSdf(task)} disabled={!hasDownloadableSdf} title={hasDownloadableSdf ? "合并下载所有可用的 SDF 结构" : "当前结果没有可下载的 3D 结构"}>下载全部 SDF</button></> : null}</div></div>
-          {task?.candidates.length ? <div className="molecule-grid">{task.candidates.map((candidate) => <MoleculeCard candidate={candidate} key={`${candidate.rank}-${candidate.smiles}`} />)}</div> : loading && task ? <TaskLoadingCard task={task} /> : <div className="results-empty"><span>∿</span><p>任务完成后，经过 RDKit 验证的候选分子将在这里以 2D/3D 卡片展示。</p></div>}
+          <div className="results-header"><div><p className="eyebrow">Ranked candidates</p><h2>候选分子</h2></div><div className="result-actions"><span>{rankedCandidates.length} molecules</span>{rankedTask && rankedCandidates.length ? <><button type="button" onClick={() => exportTaskCsv(rankedTask)}>导出 CSV</button><button type="button" onClick={() => exportTaskJson(rankedTask)}>导出 JSON</button><button type="button" onClick={() => downloadAllSdf(rankedTask)} disabled={!hasDownloadableSdf} title={hasDownloadableSdf ? "合并下载所有可用的 SDF 结构" : "当前结果没有可下载的 3D 结构"}>下载全部 SDF</button></> : null}</div></div>
+          {analysisReport && <section className="analysis-report" aria-labelledby="analysis-report-title">
+            <div className="analysis-report__heading"><div><p className="eyebrow">Result intelligence</p><h3 id="analysis-report-title">AI Analysis Report</h3></div><span>Target · {analysisReport.target}</span></div>
+            <div className="analysis-report__grid">
+              <div><span>生成数量</span><strong>{analysisReport.generated}</strong></div>
+              <div className="analysis-report__best"><span>Best Candidate</span><code>{analysisReport.bestCandidate.smiles}</code></div>
+              <div><span>QED</span><strong>{analysisReport.bestCandidate.qed == null ? "N/A" : analysisReport.bestCandidate.qed.toFixed(3)}</strong></div>
+              <div><span>SA</span><strong>{analysisReport.bestCandidate.sa == null ? "N/A" : analysisReport.bestCandidate.sa.toFixed(3)}</strong></div>
+              <div><span>Lipinski</span><strong>{analysisReport.bestCandidate.lipinski == null ? "N/A" : analysisReport.bestCandidate.lipinski ? "PASS" : "FAIL"}</strong></div>
+              {analysisReport.bestCandidate.vina != null && <div><span>Vina</span><strong>{analysisReport.bestCandidate.vina.toFixed(2)} kcal/mol</strong></div>}
+            </div>
+          </section>}
+          {rankedCandidates.length ? <div className="molecule-grid">{rankedCandidates.map((candidate) => <MoleculeCard candidate={candidate} key={`${candidate.rank}-${candidate.smiles}`} />)}</div> : loading && task ? <TaskLoadingCard task={task} /> : <div className="results-empty"><span>∿</span><p>任务完成后，经过 RDKit 验证的候选分子将在这里以 2D/3D 卡片展示。</p></div>}
         </section>
       </main>
 

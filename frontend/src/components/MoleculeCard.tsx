@@ -27,7 +27,7 @@ export function MoleculeCard({ candidate }: { candidate: Candidate }) {
   return (
     <article className="molecule-card">
       <header className="molecule-card__header">
-        <div><span className="rank">#{candidate.rank}</span><strong>候选分子</strong></div>
+        <div><span className="rank">Rank #{candidate.rank}</span><strong>候选分子</strong></div>
         <span className={`pill ${candidate.lipinski === null ? "neutral" : candidate.lipinski ? "pass" : "fail"}`}>{candidate.lipinski === null ? "Lipinski N/A" : candidate.lipinski ? "Lipinski PASS" : "Lipinski FAIL"}</span>
       </header>
 

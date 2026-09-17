@@ -289,6 +289,16 @@ footer { margin: 0 clamp(22px, 5vw, 76px); padding: 24px 0 34px; display: flex; 
 .result-actions > span { margin-right: 8px; color: var(--muted); font: 500 9px "DM Mono", monospace; text-transform: uppercase; }
 .result-actions button, .card-actions button, .molecule-view-tabs button, .secondary-button { min-height: 35px; padding: 0 12px; border: 1px solid var(--line); border-radius: 3px; background: #fff; color: var(--ink); font-size: 10px; }
 .result-actions button:hover, .card-actions button:hover, .molecule-view-tabs button:hover, .secondary-button:hover { border-color: var(--green); color: var(--green); }
+.analysis-report { margin: clamp(18px, 3vw, 34px) clamp(18px, 3vw, 34px) 0; padding: clamp(20px, 3vw, 30px); border: 1px solid var(--line); border-left: 4px solid var(--green); background: linear-gradient(135deg, #f8faf4, #f1f5ed); }
+.analysis-report__heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
+.analysis-report__heading .eyebrow { margin-bottom: 7px; }
+.analysis-report__heading h3 { margin: 0; font-size: 23px; letter-spacing: -.035em; }
+.analysis-report__heading > span { color: var(--green); font: 500 10px "DM Mono", monospace; text-transform: uppercase; }
+.analysis-report__grid { margin-top: 22px; display: grid; grid-template-columns: .7fr minmax(220px, 2fr) repeat(4, .8fr); gap: 8px; }
+.analysis-report__grid > div { min-width: 0; padding: 12px; border: 1px solid rgba(31,48,39,.08); background: rgba(255,255,255,.72); }
+.analysis-report__grid span { display: block; margin-bottom: 7px; color: var(--muted); font: 500 8px "DM Mono", monospace; text-transform: uppercase; letter-spacing: .06em; }
+.analysis-report__grid strong, .analysis-report__grid code { display: block; overflow-wrap: anywhere; color: var(--ink); font: 500 11px "DM Mono", monospace; }
+.analysis-report__best code { line-height: 1.5; }
 .molecule-grid { padding: clamp(18px, 3vw, 34px); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .molecule-card { min-width: 0; overflow: hidden; border: 1px solid var(--line); background: #fff; box-shadow: 0 10px 30px rgba(31,48,39,.04); }
 .molecule-card__header { min-height: 56px; padding: 13px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
@@ -328,6 +338,8 @@ footer { margin: 0 clamp(22px, 5vw, 76px); padding: 24px 0 34px; display: flex; 
 .secondary-button, .primary-button { min-height: 42px; }
 
 @media (max-width: 960px) {
+  .analysis-report__grid { grid-template-columns: repeat(3, 1fr); }
+  .analysis-report__best { grid-column: span 2; }
   .molecule-grid { grid-template-columns: 1fr; }
   .tool-trace ul { grid-template-columns: repeat(2, 1fr); }
 }
@@ -342,6 +354,10 @@ footer { margin: 0 clamp(22px, 5vw, 76px); padding: 24px 0 34px; display: flex; 
   .tool-trace ul { grid-template-columns: 1fr; }
   .results-header { align-items: flex-start; }
   .result-actions { justify-content: flex-start; }
+  .analysis-report { margin: 12px 0; }
+  .analysis-report__heading { align-items: flex-start; flex-direction: column; }
+  .analysis-report__grid { grid-template-columns: 1fr 1fr; }
+  .analysis-report__best { grid-column: 1 / -1; }
   .molecule-grid { padding: 0; }
   .molecule-card { box-shadow: 0 12px 35px rgba(31,48,39,.05); }
   .molecule-canvas { height: 240px; }

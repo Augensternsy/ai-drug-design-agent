@@ -14,6 +14,12 @@ export type Candidate = {
   sdf: string | null;
 };
 
+export type AnalysisReport = {
+  target: string;
+  generated: number;
+  bestCandidate: Candidate;
+};
+
 export type AgentPlan = {
   target: string;
   num_samples: number;
