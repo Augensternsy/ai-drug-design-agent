@@ -1,9 +1,10 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { normalizeAgentPlan } from "./agentPlan";
-import { agentToolStatusIcon, displayAgentTools } from "./agentTools";
 import { API_BASE_URL, apiRequest } from "./api";
 import { checkBackendHealth, type BackendMode } from "./backend";
 import { buildAnalysisReport, rankCandidates } from "./candidateRanking";
+import { AnalysisReportCard } from "./components/AnalysisReportCard";
+import { DiscoveryPipeline } from "./components/DiscoveryPipeline";
 import { MoleculeCard } from "./components/MoleculeCard";
 import { TaskLoadingCard } from "./components/TaskLoadingCard";
 import { createVerifiedDemoTask, parseDemoPrompt } from "./demo";
@@ -80,7 +81,6 @@ function App() {
   const analysisReport = useMemo(() => buildAnalysisReport(task, rankedCandidates), [task, rankedCandidates]);
   const rankedTask = useMemo(() => task ? { ...task, candidates: rankedCandidates } : null, [task, rankedCandidates]);
   const hasDownloadableSdf = rankedCandidates.some((candidate) => Boolean(candidate.mol_block));
-  const visibleAgentTools = displayAgentTools(task?.tools);
   const activeStage = displayStageFor(task?.status ?? "queued");
   const activeStageIndex = DISPLAY_STAGES.indexOf(activeStage);
   const taskState = task?.status === "failed" ? "failed" : task?.status === "completed" ? "complete" : "running";
@@ -328,7 +328,7 @@ function App() {
                 {(task.current_stage || task.progress !== null) && <div className="progress-meta">{task.current_stage && <span>{task.current_stage}</span>}{task.progress !== null && <strong>{Math.round(task.progress)}%</strong>}</div>}
                 {task.progress !== null && <div className="progress-track" role="progressbar" aria-label="任务完成进度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(task.progress)}><div style={{ width: `${task.progress}%` }} /></div>}
                 <ol className="stage-list">{visibleStages.map((stage) => { const index = DISPLAY_STAGES.indexOf(stage); const done = index < activeStageIndex || task.status === "completed"; const active = stage === activeStage && task.status !== "failed"; return <li className={`${done ? "done" : ""} ${active ? "active" : ""}`} key={stage}><span>{done ? "✓" : index + 1}</span><div><strong>{STAGE_LABELS[stage]}</strong><small>{stage}</small></div></li>; })}</ol>
-                <div className="tool-trace"><h3>Agent Tools</h3><ul>{visibleAgentTools.map((tool) => <li className={tool.status} key={tool.name}><span aria-hidden="true">{agentToolStatusIcon(tool.status)}</span><div><strong>{tool.name}</strong><small>{tool.status}</small></div></li>)}</ul></div>
+                <DiscoveryPipeline tools={task.tools} />
                 {[task.generated, task.valid, task.returned].some((value) => value !== null) && <div className="task-counts">{task.generated !== null && <span>生成 <strong>{task.generated}</strong></span>}{task.valid !== null && <span>有效 <strong>{task.valid}</strong></span>}{task.returned !== null && <span>返回 <strong>{task.returned}</strong></span>}</div>}
                 {task.summary && <p className="result-summary">{task.summary}</p>}
               </div>
@@ -339,17 +339,7 @@ function App() {
 
         <section className="results-section">
           <div className="results-header"><div><p className="eyebrow">Ranked candidates</p><h2>候选分子</h2></div><div className="result-actions"><span>{rankedCandidates.length} molecules</span>{rankedTask && rankedCandidates.length ? <><button type="button" onClick={() => exportTaskCsv(rankedTask)}>导出 CSV</button><button type="button" onClick={() => exportTaskJson(rankedTask)}>导出 JSON</button><button type="button" onClick={() => downloadAllSdf(rankedTask)} disabled={!hasDownloadableSdf} title={hasDownloadableSdf ? "合并下载所有可用的 SDF 结构" : "当前结果没有可下载的 3D 结构"}>下载全部 SDF</button></> : null}</div></div>
-          {analysisReport && <section className="analysis-report" aria-labelledby="analysis-report-title">
-            <div className="analysis-report__heading"><div><p className="eyebrow">Result intelligence</p><h3 id="analysis-report-title">AI Analysis Report</h3></div><span>Target · {analysisReport.target}</span></div>
-            <div className="analysis-report__grid">
-              <div><span>生成数量</span><strong>{analysisReport.generated}</strong></div>
-              <div className="analysis-report__best"><span>Best Candidate</span><code>{analysisReport.bestCandidate.smiles}</code></div>
-              <div><span>QED</span><strong>{analysisReport.bestCandidate.qed == null ? "N/A" : analysisReport.bestCandidate.qed.toFixed(3)}</strong></div>
-              <div><span>SA</span><strong>{analysisReport.bestCandidate.sa == null ? "N/A" : analysisReport.bestCandidate.sa.toFixed(3)}</strong></div>
-              <div><span>Lipinski</span><strong>{analysisReport.bestCandidate.lipinski == null ? "N/A" : analysisReport.bestCandidate.lipinski ? "PASS" : "FAIL"}</strong></div>
-              {analysisReport.bestCandidate.vina != null && <div><span>Vina</span><strong>{analysisReport.bestCandidate.vina.toFixed(2)} kcal/mol</strong></div>}
-            </div>
-          </section>}
+          {analysisReport && <AnalysisReportCard report={analysisReport} />}
           {rankedCandidates.length ? <div className="molecule-grid">{rankedCandidates.map((candidate) => <MoleculeCard candidate={candidate} proteinPdb={task?.protein_pdb} key={`${candidate.rank}-${candidate.smiles}`} />)}</div> : loading && task ? <TaskLoadingCard task={task} /> : <div className="results-empty"><span>∿</span><p>任务完成后，经过 RDKit 验证的候选分子将在这里以 2D/3D 卡片展示。</p></div>}
         </section>
       </main>

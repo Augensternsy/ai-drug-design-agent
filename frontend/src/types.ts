@@ -17,6 +17,7 @@ export type Candidate = {
 export type AnalysisReport = {
   target: string;
   generated: number;
+  validCandidates: number;
   bestCandidate: Candidate;
 };
 

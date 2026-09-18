@@ -85,3 +85,50 @@ test("MoleculeViewer3D marks a protein-ligand complex when protein PDB is provid
   assert.match(html, /data-viewer-mode="complex"/);
   assert.match(html, /蛋白-配体结合模式/);
 });
+
+test("AI Drug Discovery Pipeline renders all tools and their statuses as cards", async () => {
+  const { DiscoveryPipeline } = await server.ssrLoadModule("/src/components/DiscoveryPipeline.tsx");
+  const html = renderToStaticMarkup(React.createElement(DiscoveryPipeline, {
+    tools: [
+      { name: "esm2_encoding", status: "completed" },
+      { name: "generate_molecules", status: "running" },
+    ],
+  }));
+
+  assert.match(html, /AI Drug Discovery Pipeline/);
+  assert.match(html, /ESM-2/);
+  assert.match(html, /DLPS-E2PO/);
+  assert.match(html, /RDKit/);
+  assert.match(html, /Property Analyzer/);
+  assert.match(html, /AutoDock Vina/);
+  assert.match(html, /completed/);
+  assert.match(html, /running/);
+});
+
+test("AI Analysis Report renders task counts and every best-candidate metric", async () => {
+  const { AnalysisReportCard } = await server.ssrLoadModule("/src/components/AnalysisReportCard.tsx");
+  const html = renderToStaticMarkup(React.createElement(AnalysisReportCard, {
+    report: {
+      target: "ESR1",
+      generated: 5,
+      validCandidates: 3,
+      bestCandidate: {
+        rank: 1, smiles: "CCN", valid: true, qed: 0.78, sa: 2.4,
+        molwt: 315.4, logp: 2.1, lipinski: true, vina: -8.24,
+        structure_svg: null, sdf: null,
+      },
+    },
+  }));
+
+  assert.match(html, /AI Analysis Report/);
+  assert.match(html, /ESR1/);
+  assert.match(html, /Generated/);
+  assert.match(html, /Valid Candidates/);
+  assert.match(html, /Best Candidate/);
+  assert.match(html, /-8.24 kcal\/mol/);
+  assert.match(html, /0.780/);
+  assert.match(html, /2.400/);
+  assert.match(html, /PASS/);
+  assert.match(html, /315.4/);
+  assert.match(html, /2.10/);
+});

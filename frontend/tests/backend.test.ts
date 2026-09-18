@@ -96,11 +96,11 @@ test("Agent Tools map backend names and statuses to the five display steps", () 
   ]);
 
   assert.deepEqual(tools.map((tool) => tool.name), [
-    "ESM-2 Protein Encoding",
-    "DLPS-E2PO Generation",
-    "RDKit Validation",
-    "Property Evaluation",
-    "AutoDock Vina Docking",
+    "ESM-2",
+    "DLPS-E2PO",
+    "RDKit",
+    "Property Analyzer",
+    "AutoDock Vina",
   ]);
   assert.deepEqual(tools.map((tool) => tool.status), ["completed", "running", "failed", "pending", "pending"]);
   assert.deepEqual(tools.map((tool) => agentToolStatusIcon(tool.status)), ["✓", "⏳", "✗", "○", "○"]);
@@ -135,5 +135,6 @@ test("analysis report uses the ranked best candidate and real generated count", 
 
   assert.equal(report?.target, "ESR1");
   assert.equal(report?.generated, 5);
+  assert.equal(report?.validCandidates, 2);
   assert.equal(report?.bestCandidate.smiles, "CCN");
 });
