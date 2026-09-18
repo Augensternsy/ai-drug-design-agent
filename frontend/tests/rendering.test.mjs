@@ -131,4 +131,37 @@ test("AI Analysis Report renders task counts and every best-candidate metric", a
   assert.match(html, /PASS/);
   assert.match(html, /315.4/);
   assert.match(html, /2.10/);
+  assert.match(html, /Agent Evaluation/);
+  assert.match(html, /Awaiting evaluation data/);
+  assert.match(html, /N\/A/);
+});
+
+test("AI Analysis Report renders normalized Agent Evaluation progress metrics", async () => {
+  const { AnalysisReportCard } = await server.ssrLoadModule("/src/components/AnalysisReportCard.tsx");
+  const html = renderToStaticMarkup(React.createElement(AnalysisReportCard, {
+    report: {
+      target: "ESR1", generated: 1, validCandidates: 1,
+      bestCandidate: {
+        rank: 1, smiles: "CCN", valid: true, qed: 0.78, sa: 2.4,
+        molwt: 315.4, logp: 2.1, lipinski: true, vina: -8.24,
+        structure_svg: null, sdf: null,
+      },
+      evaluationReport: {
+        intent_accuracy: 0.96,
+        parameter_accuracy: 91,
+        tool_calling_success: 0.875,
+        task_success_rate: 100,
+      },
+    },
+  }));
+
+  assert.match(html, /Intent Accuracy/);
+  assert.match(html, /Parameter Accuracy/);
+  assert.match(html, /Tool Calling Success/);
+  assert.match(html, /Task Success Rate/);
+  assert.match(html, /96%/);
+  assert.match(html, /91%/);
+  assert.match(html, /87.5%/);
+  assert.match(html, /100%/);
+  assert.doesNotMatch(html, /Awaiting evaluation data/);
 });

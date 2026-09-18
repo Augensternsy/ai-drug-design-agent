@@ -19,6 +19,14 @@ export type AnalysisReport = {
   generated: number;
   validCandidates: number;
   bestCandidate: Candidate;
+  evaluationReport: AgentEvaluationReport | null;
+};
+
+export type AgentEvaluationReport = {
+  intent_accuracy: number | null;
+  parameter_accuracy: number | null;
+  tool_calling_success: number | null;
+  task_success_rate: number | null;
 };
 
 export type AgentPlan = {
@@ -58,6 +66,7 @@ export type Task = {
   candidates: Candidate[];
   requested_by_agent: boolean;
   agent_plan: AgentPlan | null;
+  evaluation_report?: AgentEvaluationReport | null;
   tools?: AgentTool[];
   tool_trace: ToolExecution[];
   summary: string | null;

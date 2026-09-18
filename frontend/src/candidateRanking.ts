@@ -39,5 +39,6 @@ export function buildAnalysisReport(task: Task | null, rankedCandidates: Candida
     generated: task.generated ?? rankedCandidates.length,
     validCandidates: task.valid ?? rankedCandidates.filter((candidate) => candidate.valid).length,
     bestCandidate: rankedCandidates[0],
+    evaluationReport: task.evaluation_report ?? null,
   };
 }

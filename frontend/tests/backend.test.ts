@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { DEFAULT_AGENT_PLAN, normalizeAgentPlan } from "../src/agentPlan.ts";
+import { evaluationPercent } from "../src/agentEvaluation.ts";
 import { agentToolStatusIcon, displayAgentTools } from "../src/agentTools.ts";
 import { HEALTH_TIMEOUT_MS, checkBackendHealth } from "../src/backend.ts";
 import { buildAnalysisReport, rankCandidates } from "../src/candidateRanking.ts";
 import { createVerifiedDemoTask } from "../src/demo.ts";
+import { normalizeEvaluationReport } from "../src/taskPolling.ts";
 import type { Candidate } from "../src/types.ts";
 import { candidateSdfContent, combinedCandidatesSdf } from "../src/utils/exports.ts";
 
@@ -137,4 +139,18 @@ test("analysis report uses the ranked best candidate and real generated count", 
   assert.equal(report?.generated, 5);
   assert.equal(report?.validCandidates, 2);
   assert.equal(report?.bestCandidate.smiles, "CCN");
+});
+
+test("Agent Evaluation accepts 0-1 and 0-100 metric scales", () => {
+  const report = normalizeEvaluationReport({
+    intent_accuracy: 0.94,
+    parameter_accuracy: 87,
+    tool_calling_success: null,
+    task_success_rate: 1,
+  });
+
+  assert.equal(evaluationPercent(report?.intent_accuracy), 94);
+  assert.equal(evaluationPercent(report?.parameter_accuracy), 87);
+  assert.equal(evaluationPercent(report?.tool_calling_success), null);
+  assert.equal(evaluationPercent(report?.task_success_rate), 100);
 });

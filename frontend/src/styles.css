@@ -308,6 +308,19 @@ footer { margin: 0 clamp(22px, 5vw, 76px); padding: 24px 0 34px; display: flex; 
 .analysis-report__candidate dl { margin: 14px 0 0; display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px; }
 .analysis-report__candidate dl > div { min-width: 0; padding: 10px; background: #f4f6f0; }
 .analysis-report__candidate dd { margin: 6px 0 0; overflow-wrap: anywhere; color: var(--ink); font: 500 10px "DM Mono", monospace; }
+.analysis-report__evaluation { margin-top: 8px; padding: 14px; border: 1px solid rgba(31,48,39,.08); background: rgba(255,255,255,.72); }
+.analysis-report__evaluation-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; }
+.analysis-report__evaluation-heading span { color: var(--muted); font: 500 8px "DM Mono", monospace; text-transform: uppercase; letter-spacing: .06em; }
+.analysis-report__evaluation-heading h4 { margin: 5px 0 0; font-size: 14px; }
+.analysis-report__evaluation-heading > small { color: var(--orange); font: 500 8px "DM Mono", monospace; text-transform: uppercase; }
+.evaluation-metrics { margin-top: 13px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+.evaluation-metric { min-width: 0; padding: 10px; background: #f4f6f0; }
+.evaluation-metric > div:first-child { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.evaluation-metric span { color: var(--muted); font: 500 8px/1.35 "DM Mono", monospace; text-transform: uppercase; }
+.evaluation-metric strong { color: var(--green); font: 500 11px "DM Mono", monospace; white-space: nowrap; }
+.evaluation-metric.unavailable strong { color: var(--muted); }
+.evaluation-progress { height: 5px; margin-top: 11px; overflow: hidden; border-radius: 99px; background: #dfe4dc; }
+.evaluation-progress i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--green), var(--lime)); }
 .molecule-grid { padding: clamp(18px, 3vw, 34px); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .molecule-card { min-width: 0; overflow: hidden; border: 1px solid var(--line); background: #fff; box-shadow: 0 10px 30px rgba(31,48,39,.04); }
 .molecule-card__header { min-height: 56px; padding: 13px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
@@ -349,6 +362,7 @@ footer { margin: 0 clamp(22px, 5vw, 76px); padding: 24px 0 34px; display: flex; 
 @media (max-width: 960px) {
   .discovery-pipeline ol { grid-template-columns: repeat(3, 1fr); }
   .analysis-report__candidate dl { grid-template-columns: repeat(3, 1fr); }
+  .evaluation-metrics { grid-template-columns: repeat(2, 1fr); }
   .molecule-grid { grid-template-columns: 1fr; }
 }
 
@@ -367,6 +381,8 @@ footer { margin: 0 clamp(22px, 5vw, 76px); padding: 24px 0 34px; display: flex; 
   .analysis-report__heading { align-items: flex-start; flex-direction: column; }
   .analysis-report__facts { grid-template-columns: 1fr; }
   .analysis-report__candidate dl { grid-template-columns: 1fr 1fr; }
+  .analysis-report__evaluation-heading { align-items: flex-start; flex-direction: column; }
+  .evaluation-metrics { grid-template-columns: 1fr; }
   .molecule-grid { padding: 0; }
   .molecule-card { box-shadow: 0 12px 35px rgba(31,48,39,.05); }
   .molecule-canvas { height: 240px; }

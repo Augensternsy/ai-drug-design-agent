@@ -70,6 +70,22 @@ test("task polling preserves Agent Tools returned by the backend", async () => {
   assert.deepEqual(result.tools, [{ name: "esm2_encoding", status: "completed" }]);
 });
 
+test("task polling preserves the optional Agent Evaluation report", async () => {
+  const evaluationReport = {
+    intent_accuracy: 0.95,
+    parameter_accuracy: 91,
+    tool_calling_success: 0.88,
+    task_success_rate: 84,
+  };
+  const result = await pollTaskUntilTerminal("task-123", {
+    fetchTask: async () => task("completed", { evaluation_report: evaluationReport }),
+    onUpdate: () => undefined,
+    sleep: async () => undefined,
+  });
+
+  assert.deepEqual(result.evaluation_report, evaluationReport);
+});
+
 test("failed task stops polling and preserves backend error", async () => {
   let requests = 0;
   const result = await pollTaskUntilTerminal("task-123", {

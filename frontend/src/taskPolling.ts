@@ -1,4 +1,4 @@
-import type { AgentTool, Candidate, Task, ToolExecution } from "./types";
+import type { AgentEvaluationReport, AgentTool, Candidate, Task, ToolExecution } from "./types";
 
 export const TASK_POLL_INTERVAL_MS = 2_000;
 export const TASK_POLL_TIMEOUT_MS = 120_000;
@@ -21,6 +21,17 @@ function finiteNumber(value: unknown): number | null {
 
 function nullableBoolean(value: unknown): boolean | null {
   return typeof value === "boolean" ? value : null;
+}
+
+export function normalizeEvaluationReport(value: unknown): AgentEvaluationReport | null {
+  if (!value || typeof value !== "object") return null;
+  const report = value as Record<string, unknown>;
+  return {
+    intent_accuracy: finiteNumber(report.intent_accuracy),
+    parameter_accuracy: finiteNumber(report.parameter_accuracy),
+    tool_calling_success: finiteNumber(report.tool_calling_success),
+    task_success_rate: finiteNumber(report.task_success_rate),
+  };
 }
 
 function normalizeCandidate(value: unknown, index: number): Candidate | null {
@@ -88,6 +99,7 @@ export function normalizeTaskResponse(value: unknown, fallback?: Task): Task {
     candidates,
     requested_by_agent: typeof payload.requested_by_agent === "boolean" ? payload.requested_by_agent : fallback?.requested_by_agent ?? false,
     agent_plan: payload.agent_plan && typeof payload.agent_plan === "object" ? payload.agent_plan as Task["agent_plan"] : fallback?.agent_plan ?? null,
+    evaluation_report: payload.evaluation_report !== undefined ? normalizeEvaluationReport(payload.evaluation_report) : fallback?.evaluation_report ?? null,
     tools: Array.isArray(payload.tools) ? normalizeAgentTools(payload.tools) : fallback?.tools,
     tool_trace: Array.isArray(payload.tool_trace) ? normalizeTools(payload.tool_trace) : fallback?.tool_trace ?? [],
     summary: typeof payload.summary === "string" ? payload.summary : fallback?.summary ?? null,
