@@ -3,13 +3,14 @@ import { normalizeAgentPlan } from "./agentPlan";
 import { API_BASE_URL, apiRequest } from "./api";
 import { checkBackendHealth, type BackendMode } from "./backend";
 import { buildAnalysisReport, rankCandidates } from "./candidateRanking";
+import { loadAgentEvaluationReport } from "./agentEvaluation";
 import { AnalysisReportCard } from "./components/AnalysisReportCard";
 import { DiscoveryPipeline } from "./components/DiscoveryPipeline";
 import { MoleculeCard } from "./components/MoleculeCard";
 import { TaskLoadingCard } from "./components/TaskLoadingCard";
 import { createVerifiedDemoTask, parseDemoPrompt } from "./demo";
 import { pollTaskUntilTerminal } from "./taskPolling";
-import type { AgentGenerateResponse, GenerateResponse, StoredTask, Task } from "./types";
+import type { AgentEvaluationReport, AgentGenerateResponse, GenerateResponse, StoredTask, Task } from "./types";
 import { downloadAllSdf, exportTaskCsv, exportTaskJson } from "./utils/exports";
 import { clearHistory, loadHistory, saveTaskToHistory } from "./utils/history";
 
@@ -74,11 +75,15 @@ function App() {
   const [history, setHistory] = useState<StoredTask[]>(() => loadHistory());
   const [historyOpen, setHistoryOpen] = useState(false);
   const [backendMode, setBackendMode] = useState<BackendMode>("checking");
+  const [evaluationReport, setEvaluationReport] = useState<AgentEvaluationReport | null>(null);
   const lastSavedTask = useRef<string | null>(null);
 
   const running = submitting || loading;
   const rankedCandidates = useMemo(() => rankCandidates(task?.candidates ?? []), [task?.candidates]);
-  const analysisReport = useMemo(() => buildAnalysisReport(task, rankedCandidates), [task, rankedCandidates]);
+  const analysisReport = useMemo(
+    () => buildAnalysisReport(task, rankedCandidates, evaluationReport),
+    [task, rankedCandidates, evaluationReport],
+  );
   const rankedTask = useMemo(() => task ? { ...task, candidates: rankedCandidates } : null, [task, rankedCandidates]);
   const hasDownloadableSdf = rankedCandidates.some((candidate) => Boolean(candidate.mol_block));
   const activeStage = displayStageFor(task?.status ?? "queued");
@@ -91,14 +96,18 @@ function App() {
 
   useEffect(() => {
     let active = true;
-    checkBackendHealth(API_BASE_URL).then((nextMode) => {
+    void (async () => {
+      const nextMode = await checkBackendHealth(API_BASE_URL);
       if (!active) return;
       setBackendMode(nextMode);
-      if (nextMode === "demo") {
-        setSubmittedWithDocking(false);
-        setTask(createVerifiedDemoTask("ESR1", 1, false));
+      if (nextMode === "live") {
+        const report = await loadAgentEvaluationReport(API_BASE_URL);
+        if (active) setEvaluationReport(report);
+        return;
       }
-    });
+      setSubmittedWithDocking(false);
+      setTask(createVerifiedDemoTask("ESR1", 1, false));
+    })();
     return () => { active = false; };
   }, []);
 

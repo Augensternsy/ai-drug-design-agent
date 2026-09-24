@@ -1,4 +1,4 @@
-import type { AnalysisReport, Candidate, Task } from "./types";
+import type { AgentEvaluationReport, AnalysisReport, Candidate, Task } from "./types";
 
 function finiteNumber(value: number | null | undefined): value is number {
   return typeof value === "number" && Number.isFinite(value);
@@ -31,7 +31,11 @@ export function rankCandidates(candidates: Candidate[]): Candidate[] {
     .map(({ candidate }, index) => ({ ...candidate, rank: index + 1 }));
 }
 
-export function buildAnalysisReport(task: Task | null, rankedCandidates: Candidate[]): AnalysisReport | null {
+export function buildAnalysisReport(
+  task: Task | null,
+  rankedCandidates: Candidate[],
+  startupEvaluationReport?: AgentEvaluationReport | null,
+): AnalysisReport | null {
   if (!task || task.status !== "completed" || rankedCandidates.length === 0) return null;
 
   return {
@@ -39,6 +43,8 @@ export function buildAnalysisReport(task: Task | null, rankedCandidates: Candida
     generated: task.generated ?? rankedCandidates.length,
     validCandidates: task.valid ?? rankedCandidates.filter((candidate) => candidate.valid).length,
     bestCandidate: rankedCandidates[0],
-    evaluationReport: task.evaluation_report ?? null,
+    evaluationReport: startupEvaluationReport === undefined
+      ? task.evaluation_report ?? null
+      : startupEvaluationReport,
   };
 }
