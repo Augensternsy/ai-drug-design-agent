@@ -9,7 +9,7 @@ DLPS-E2PO, RDKit and optional AutoDock Vina pipeline.
 ```text
 LLM_ENABLED=true
 LLM_BASE_URL=https://api.qnaigc.com/v1
-LLM_MODEL=deepseek-v4-flash
+LLM_MODEL=deepseek-v4.1-flash
 LLM_API_KEY=<injected by Modal Secret>
 ```
 
@@ -28,7 +28,7 @@ py -m modal secret create --force ai-drug-design-agent-llm `
   LLM_ENABLED=true `
   LLM_BASE_URL=https://api.qnaigc.com/v1 `
   LLM_API_KEY="<YOUR_QINIU_API_KEY>" `
-  LLM_MODEL=deepseek-v4-flash
+  LLM_MODEL=deepseek-v4.1-flash
 ```
 
 ## Deploy with the Secret

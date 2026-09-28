@@ -114,7 +114,7 @@ py -m modal secret create --force ai-drug-design-agent-llm `
   LLM_ENABLED=true `
   LLM_BASE_URL=https://api.qnaigc.com/v1 `
   LLM_API_KEY="<YOUR_QINIU_API_KEY>" `
-  LLM_MODEL=deepseek-v4-flash
+  LLM_MODEL=deepseek-v4.1-flash
 ```
 
 `LLM_BASE_URL` may be an API base such as `/v1` or the complete

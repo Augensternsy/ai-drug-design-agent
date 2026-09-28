@@ -38,7 +38,7 @@ class LlmProviderTests(unittest.TestCase):
             LLM_ENABLED=True,
             LLM_BASE_URL="https://api.qnaigc.com/v1",
             LLM_API_KEY="test-only-key",
-            LLM_MODEL="deepseek-v4-flash",
+            LLM_MODEL="deepseek-v4.1-flash",
         )
 
     def test_requires_enabled_and_complete_configuration(self):
@@ -90,7 +90,7 @@ class LlmProviderTests(unittest.TestCase):
             "Bearer test-only-key",
         )
         request_json = json.loads(outgoing_request.data.decode("utf-8"))
-        self.assertEqual(request_json["model"], "deepseek-v4-flash")
+        self.assertEqual(request_json["model"], "deepseek-v4.1-flash")
         self.assertEqual(request_json["messages"][1]["content"], prompt)
         self.assertEqual(urlopen.call_args.kwargs["timeout"], 10.0)
 
