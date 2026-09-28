@@ -1,0 +1,2854 @@
+{
+  "summary": {
+    "total_cases": 156,
+    "correct_intent": 156,
+    "intent_accuracy": 100.0,
+    "correct_params": 148,
+    "param_accuracy": 94.87,
+    "executed_tasks": 5,
+    "tool_success_tasks": 5,
+    "tool_success_rate": 100.0,
+    "task_success_count": 5,
+    "task_success_rate": 100.0
+  },
+  "cases": [
+    {
+      "id": "tc_001",
+      "input": "请寻找针对esr1的1条活性配体，with docking",
+      "expected": {
+        "target": "ESR1",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "ESR1",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": {
+        "task_id": "9db393b7-61b7-45a5-ab29-97c8bd5ba59f",
+        "status": "completed",
+        "returned": 1,
+        "tools_passed": true,
+        "candidates_count": 1
+      }
+    },
+    {
+      "id": "tc_002",
+      "input": "为Esr1蛋白设计1条药物分子无需对接",
+      "expected": {
+        "target": "ESR1",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "ESR1",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_003",
+      "input": "针对ESR1生成2条分子，with docking",
+      "expected": {
+        "target": "ESR1",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "ESR1",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": {
+        "task_id": "3885fec6-d332-466a-a9d8-2e4a86a634f4",
+        "status": "completed",
+        "returned": 2,
+        "tools_passed": true,
+        "candidates_count": 2
+      }
+    },
+    {
+      "id": "tc_004",
+      "input": "为esr1蛋白设计2个药物分子仅评估理化性质",
+      "expected": {
+        "target": "ESR1",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "ESR1",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_005",
+      "input": "生成针对Esr1的3候选分子候选分子包含3D对接",
+      "expected": {
+        "target": "ESR1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "ESR1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_006",
+      "input": "请寻找针对雌激素受体ESR1的三个活性配体，无需对接",
+      "expected": {
+        "target": "ESR1",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "ESR1",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": {
+        "task_id": "a301a8e6-bdb8-44cd-a753-8b4efd18effd",
+        "status": "completed",
+        "returned": 3,
+        "tools_passed": true,
+        "candidates_count": 3
+      }
+    },
+    {
+      "id": "tc_007",
+      "input": "生成针对Esr1的四个候选分子with docking",
+      "expected": {
+        "target": "ESR1",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "ESR1",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_008",
+      "input": "针对Esr1生成四个分子，不跑对接",
+      "expected": {
+        "target": "ESR1",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "ESR1",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_009",
+      "input": "生成针对雌激素受体ESR1的五个候选分子with docking",
+      "expected": {
+        "target": "ESR1",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "ESR1",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_010",
+      "input": "请寻找针对ESR1的5个活性配体，不需要分子对接",
+      "expected": {
+        "target": "ESR1",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "ESR1",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_011",
+      "input": "生成针对Hcrtr1的一个候选分子with docking",
+      "expected": {
+        "target": "HCRTR1",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "HCRTR1",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": {
+        "task_id": "70f12758-a9cc-46d8-a668-aedfef7fff47",
+        "status": "completed",
+        "returned": 1,
+        "tools_passed": true,
+        "candidates_count": 1
+      }
+    },
+    {
+      "id": "tc_012",
+      "input": "为HCRTR1蛋白设计一个药物分子跳过Vina",
+      "expected": {
+        "target": "HCRTR1",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "HCRTR1",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_013",
+      "input": "请寻找针对Hcrtr1的两个活性配体，with docking",
+      "expected": {
+        "target": "HCRTR1",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "HCRTR1",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_014",
+      "input": "帮我设计hcrtr1靶点2条小分子without docking",
+      "expected": {
+        "target": "HCRTR1",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "HCRTR1",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_015",
+      "input": "为Hcrtr1蛋白设计3候选分子药物分子包含3D对接",
+      "expected": {
+        "target": "HCRTR1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "HCRTR1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_016",
+      "input": "生成针对HCRTR1的三个候选分子不跑对接",
+      "expected": {
+        "target": "HCRTR1",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "HCRTR1",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_017",
+      "input": "针对HCRTR1靶点生成四个分子，需要AutoDock Vina",
+      "expected": {
+        "target": "HCRTR1",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "HCRTR1",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_018",
+      "input": "为食欲素受体1(HCRTR1)蛋白设计4个药物分子无需对接",
+      "expected": {
+        "target": "HCRTR1",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "HCRTR1",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_019",
+      "input": "请寻找针对HCRTR1靶点的5个候选分子活性配体，with docking",
+      "expected": {
+        "target": "HCRTR1",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "HCRTR1",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_020",
+      "input": "针对HCRTR1靶点生成5个分子，不需要分子对接",
+      "expected": {
+        "target": "HCRTR1",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "HCRTR1",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_021",
+      "input": "为Jak1蛋白设计1个药物分子跑分子对接",
+      "expected": {
+        "target": "JAK1",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "JAK1",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": {
+        "task_id": "b1e3a70d-8795-475d-94d8-b3e3ed509111",
+        "status": "completed",
+        "returned": 1,
+        "tools_passed": true,
+        "candidates_count": 1
+      }
+    },
+    {
+      "id": "tc_022",
+      "input": "请寻找针对JAK1激酶的1个活性配体，仅评估理化性质",
+      "expected": {
+        "target": "JAK1",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "JAK1",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_023",
+      "input": "针对JAK1激酶生成2条分子，with docking",
+      "expected": {
+        "target": "JAK1",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "JAK1",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_024",
+      "input": "帮我设计JAK1激酶靶点2条小分子无需对接",
+      "expected": {
+        "target": "JAK1",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "JAK1",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_025",
+      "input": "帮我设计Jak1靶点三个小分子包含3D对接",
+      "expected": {
+        "target": "JAK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "JAK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_026",
+      "input": "针对JAK1生成3条分子，不跑对接",
+      "expected": {
+        "target": "JAK1",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "JAK1",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_027",
+      "input": "生成针对JAK1激酶的4个候选分子包含3D对接",
+      "expected": {
+        "target": "JAK1",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "JAK1",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_028",
+      "input": "请寻找针对JAK1蛋白的4个活性配体，不需要分子对接",
+      "expected": {
+        "target": "JAK1",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "JAK1",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_029",
+      "input": "请寻找针对jak1的5个活性配体，跑分子对接",
+      "expected": {
+        "target": "JAK1",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "JAK1",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_030",
+      "input": "请寻找针对Jak1的5个活性配体，不跑对接",
+      "expected": {
+        "target": "JAK1",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "JAK1",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_031",
+      "input": "请寻找针对P2RX3的1条活性配体，包含3D对接",
+      "expected": {
+        "target": "P2RX3",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "P2RX3",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_032",
+      "input": "请寻找针对P2RX3靶点的一个活性配体，无需对接",
+      "expected": {
+        "target": "P2RX3",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "P2RX3",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_033",
+      "input": "请寻找针对P2RX3靶点的双候选活性配体，需要AutoDock Vina",
+      "expected": {
+        "target": "P2RX3",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "P2RX3",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_034",
+      "input": "为P2RX3靶点蛋白设计双候选药物分子不需要分子对接",
+      "expected": {
+        "target": "P2RX3",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "P2RX3",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_035",
+      "input": "为P2X3受体(P2RX3)蛋白设计3条药物分子并进行Vina评估",
+      "expected": {
+        "target": "P2RX3",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "P2RX3",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_036",
+      "input": "帮我设计P2RX3靶点靶点3候选分子小分子不跑对接",
+      "expected": {
+        "target": "P2RX3",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "P2RX3",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_037",
+      "input": "帮我设计P2RX3靶点4个小分子需要AutoDock Vina",
+      "expected": {
+        "target": "P2RX3",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "P2RX3",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_038",
+      "input": "生成针对p2rx3的四个候选分子without docking",
+      "expected": {
+        "target": "P2RX3",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "P2RX3",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_039",
+      "input": "请寻找针对P2RX3的5个活性配体，并进行Vina评估",
+      "expected": {
+        "target": "P2RX3",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "P2RX3",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_040",
+      "input": "请寻找针对P2X3受体(P2RX3)的5个活性配体，不需要分子对接",
+      "expected": {
+        "target": "P2RX3",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "P2RX3",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_041",
+      "input": "请寻找针对去甲基化酶KDM1A的1条活性配体，跑分子对接",
+      "expected": {
+        "target": "KDM1A",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "KDM1A",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_042",
+      "input": "请寻找针对KDM1A蛋白的1条活性配体，不跑对接",
+      "expected": {
+        "target": "KDM1A",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "KDM1A",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_043",
+      "input": "生成针对KDM1A的双候选候选分子并进行Vina评估",
+      "expected": {
+        "target": "KDM1A",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "KDM1A",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_044",
+      "input": "请寻找针对KDM1A的2条活性配体，不跑对接",
+      "expected": {
+        "target": "KDM1A",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "KDM1A",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_045",
+      "input": "针对KDM1A生成3个分子，跑分子对接",
+      "expected": {
+        "target": "KDM1A",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "KDM1A",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_046",
+      "input": "生成针对KDM1A蛋白的3个候选分子仅评估理化性质",
+      "expected": {
+        "target": "KDM1A",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "KDM1A",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_047",
+      "input": "请寻找针对去甲基化酶KDM1A的4条活性配体，跑分子对接",
+      "expected": {
+        "target": "KDM1A",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "KDM1A",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_048",
+      "input": "针对kdm1a生成4条分子，without docking",
+      "expected": {
+        "target": "KDM1A",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "KDM1A",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_049",
+      "input": "针对KDM1A生成5个分子，包含3D对接",
+      "expected": {
+        "target": "KDM1A",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "KDM1A",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_050",
+      "input": "请寻找针对KDM1A的五个活性配体，无需对接",
+      "expected": {
+        "target": "KDM1A",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "KDM1A",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_051",
+      "input": "请寻找针对异柠檬酸脱氢酶1(IDH1)的一个活性配体，并进行Vina评估",
+      "expected": {
+        "target": "IDH1",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "IDH1",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_052",
+      "input": "帮我设计IDH1靶点靶点1条小分子不跑对接",
+      "expected": {
+        "target": "IDH1",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "IDH1",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_053",
+      "input": "请寻找针对异柠檬酸脱氢酶1(IDH1)的双候选活性配体，并进行Vina评估",
+      "expected": {
+        "target": "IDH1",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "IDH1",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_054",
+      "input": "生成针对IDH1的2条候选分子跳过Vina",
+      "expected": {
+        "target": "IDH1",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "IDH1",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_055",
+      "input": "生成针对IDH1的3个候选分子并进行Vina评估",
+      "expected": {
+        "target": "IDH1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "IDH1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_056",
+      "input": "请寻找针对idh1的3条活性配体，without docking",
+      "expected": {
+        "target": "IDH1",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "IDH1",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_057",
+      "input": "请寻找针对idh1的4条活性配体，需要AutoDock Vina",
+      "expected": {
+        "target": "IDH1",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "IDH1",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_058",
+      "input": "生成针对IDH1的4个候选分子without docking",
+      "expected": {
+        "target": "IDH1",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "IDH1",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_059",
+      "input": "帮我设计IDH1靶点靶点五个小分子包含3D对接",
+      "expected": {
+        "target": "IDH1",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "IDH1",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_060",
+      "input": "帮我设计idh1靶点5个候选分子小分子without docking",
+      "expected": {
+        "target": "IDH1",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "IDH1",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_061",
+      "input": "请寻找针对RIOK1激酶的1条活性配体，包含3D对接",
+      "expected": {
+        "target": "RIOK1",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "RIOK1",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_062",
+      "input": "请寻找针对RIOK1激酶的single活性配体，仅评估理化性质",
+      "expected": {
+        "target": "RIOK1",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "RIOK1",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_063",
+      "input": "生成针对RIOK1靶点的2条候选分子with docking",
+      "expected": {
+        "target": "RIOK1",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "RIOK1",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_064",
+      "input": "生成针对RIOK1靶点的2个候选分子跳过Vina",
+      "expected": {
+        "target": "RIOK1",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "RIOK1",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_065",
+      "input": "请寻找针对riok1的3个活性配体，with docking",
+      "expected": {
+        "target": "RIOK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "RIOK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_066",
+      "input": "针对RIOK1靶点生成3候选分子分子，不跑对接",
+      "expected": {
+        "target": "RIOK1",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "RIOK1",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_067",
+      "input": "生成针对RIOK1靶点的4个候选分子进行Vina评分",
+      "expected": {
+        "target": "RIOK1",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "RIOK1",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_068",
+      "input": "为RIOK1蛋白设计4个药物分子跳过Vina",
+      "expected": {
+        "target": "RIOK1",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "RIOK1",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_069",
+      "input": "帮我设计RIOK1激酶靶点5个小分子需要AutoDock Vina",
+      "expected": {
+        "target": "RIOK1",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "RIOK1",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_070",
+      "input": "请寻找针对RIOK1靶点的5个候选分子活性配体，无需对接",
+      "expected": {
+        "target": "RIOK1",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "RIOK1",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_071",
+      "input": "为nr4a1蛋白设计1条药物分子包含3D对接",
+      "expected": {
+        "target": "NR4A1",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "NR4A1",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_072",
+      "input": "生成针对NR4A1蛋白的single候选分子不跑对接",
+      "expected": {
+        "target": "NR4A1",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "NR4A1",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_073",
+      "input": "针对NR4A1蛋白生成双候选分子，跑分子对接",
+      "expected": {
+        "target": "NR4A1",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "NR4A1",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_074",
+      "input": "针对核受体NR4A1生成两个分子，无需对接",
+      "expected": {
+        "target": "NR4A1",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "NR4A1",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_075",
+      "input": "生成针对NR4A1的三个候选分子跑分子对接",
+      "expected": {
+        "target": "NR4A1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "NR4A1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_076",
+      "input": "生成针对NR4A1的3候选分子候选分子仅评估理化性质",
+      "expected": {
+        "target": "NR4A1",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "NR4A1",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_077",
+      "input": "生成针对NR4A1蛋白的四个候选分子跑分子对接",
+      "expected": {
+        "target": "NR4A1",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "NR4A1",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_078",
+      "input": "生成针对NR4A1蛋白的4个候选分子仅评估理化性质",
+      "expected": {
+        "target": "NR4A1",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "NR4A1",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_079",
+      "input": "为NR4A1蛋白设计5个候选分子药物分子包含3D对接",
+      "expected": {
+        "target": "NR4A1",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "NR4A1",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_080",
+      "input": "帮我设计NR4A1靶点五个小分子不需要分子对接",
+      "expected": {
+        "target": "NR4A1",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "NR4A1",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_081",
+      "input": "生成针对谷氨酸受体GRIK1的1个候选分子需要AutoDock Vina",
+      "expected": {
+        "target": "GRIK1",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "GRIK1",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_082",
+      "input": "请寻找针对grik1的single活性配体，无需对接",
+      "expected": {
+        "target": "GRIK1",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "GRIK1",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_083",
+      "input": "为GRIK1靶点蛋白设计2条药物分子进行Vina评分",
+      "expected": {
+        "target": "GRIK1",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "GRIK1",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_084",
+      "input": "生成针对grik1的2条候选分子不需要分子对接",
+      "expected": {
+        "target": "GRIK1",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "GRIK1",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_085",
+      "input": "帮我设计GRIK1靶点靶点3条小分子with docking",
+      "expected": {
+        "target": "GRIK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "GRIK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_086",
+      "input": "针对GRIK1生成三个分子，无需对接",
+      "expected": {
+        "target": "GRIK1",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "GRIK1",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_087",
+      "input": "帮我设计谷氨酸受体GRIK1靶点4条小分子跑分子对接",
+      "expected": {
+        "target": "GRIK1",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "GRIK1",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_088",
+      "input": "针对谷氨酸受体GRIK1生成4条分子，跳过Vina",
+      "expected": {
+        "target": "GRIK1",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "GRIK1",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_089",
+      "input": "请寻找针对GRIK1的5个活性配体，并进行Vina评估",
+      "expected": {
+        "target": "GRIK1",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "GRIK1",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_090",
+      "input": "生成针对谷氨酸受体GRIK1的5条候选分子无需对接",
+      "expected": {
+        "target": "GRIK1",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "GRIK1",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_091",
+      "input": "生成针对CCR9的1条候选分子with docking",
+      "expected": {
+        "target": "CCR9",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "CCR9",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_092",
+      "input": "生成针对CCR9的single候选分子without docking",
+      "expected": {
+        "target": "CCR9",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "CCR9",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_093",
+      "input": "帮我设计CCR9靶点靶点2条小分子跑分子对接",
+      "expected": {
+        "target": "CCR9",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "CCR9",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_094",
+      "input": "请寻找针对ccr9的双候选活性配体，无需对接",
+      "expected": {
+        "target": "CCR9",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "CCR9",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_095",
+      "input": "请寻找针对CCR9靶点的3候选分子活性配体，包含3D对接",
+      "expected": {
+        "target": "CCR9",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "CCR9",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_096",
+      "input": "针对ccr9生成3个分子，跳过Vina",
+      "expected": {
+        "target": "CCR9",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "CCR9",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_097",
+      "input": "针对CCR9生成4条分子，进行Vina评分",
+      "expected": {
+        "target": "CCR9",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "CCR9",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_098",
+      "input": "为CCR9蛋白设计4条药物分子不跑对接",
+      "expected": {
+        "target": "CCR9",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "CCR9",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_099",
+      "input": "请寻找针对CCR9的5个活性配体，包含3D对接",
+      "expected": {
+        "target": "CCR9",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "CCR9",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_100",
+      "input": "请寻找针对CCR9的5条活性配体，不跑对接",
+      "expected": {
+        "target": "CCR9",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "CCR9",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_101",
+      "input": "针对FTO生成一个分子，进行Vina评分",
+      "expected": {
+        "target": "FTO",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "FTO",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_102",
+      "input": "请寻找针对FTO的single活性配体，跳过Vina",
+      "expected": {
+        "target": "FTO",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "FTO",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_103",
+      "input": "帮我设计FTO靶点双候选小分子包含3D对接",
+      "expected": {
+        "target": "FTO",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "FTO",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_104",
+      "input": "帮我设计fto靶点2个小分子不需要分子对接",
+      "expected": {
+        "target": "FTO",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "FTO",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_105",
+      "input": "生成针对FTO靶点的3条候选分子包含3D对接",
+      "expected": {
+        "target": "FTO",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "FTO",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_106",
+      "input": "请寻找针对fto的3个活性配体，不跑对接",
+      "expected": {
+        "target": "FTO",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "FTO",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_107",
+      "input": "针对FTO去甲基化酶生成四个分子，包含3D对接",
+      "expected": {
+        "target": "FTO",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "FTO",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_108",
+      "input": "为FTO去甲基化酶蛋白设计四个药物分子without docking",
+      "expected": {
+        "target": "FTO",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "FTO",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_109",
+      "input": "帮我设计FTO去甲基化酶靶点五个小分子需要AutoDock Vina",
+      "expected": {
+        "target": "FTO",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "FTO",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_110",
+      "input": "生成针对fto的5个候选分子跳过Vina",
+      "expected": {
+        "target": "FTO",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "FTO",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_111",
+      "input": "请寻找针对spin1的1个活性配体，包含3D对接",
+      "expected": {
+        "target": "SPIN1",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "SPIN1",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_112",
+      "input": "为spin1蛋白设计single药物分子仅评估理化性质",
+      "expected": {
+        "target": "SPIN1",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "SPIN1",
+        "num_samples": 1,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_113",
+      "input": "为spin1蛋白设计2个药物分子需要AutoDock Vina",
+      "expected": {
+        "target": "SPIN1",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "SPIN1",
+        "num_samples": 2,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_114",
+      "input": "生成针对SPIN1的双候选候选分子仅评估理化性质",
+      "expected": {
+        "target": "SPIN1",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "SPIN1",
+        "num_samples": 2,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_115",
+      "input": "针对spin1生成三个分子，with docking",
+      "expected": {
+        "target": "SPIN1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "SPIN1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_116",
+      "input": "为SPIN1蛋白设计3个药物分子跳过Vina",
+      "expected": {
+        "target": "SPIN1",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "SPIN1",
+        "num_samples": 3,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_117",
+      "input": "生成针对SPIN1的4个候选分子并进行Vina评估",
+      "expected": {
+        "target": "SPIN1",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "SPIN1",
+        "num_samples": 4,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_118",
+      "input": "帮我设计SPIN1靶点4条小分子无需对接",
+      "expected": {
+        "target": "SPIN1",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "SPIN1",
+        "num_samples": 4,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_119",
+      "input": "请寻找针对SPIN1靶点的5个活性配体，with docking",
+      "expected": {
+        "target": "SPIN1",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "SPIN1",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_120",
+      "input": "请寻找针对SPIN1靶点的五个活性配体，无需对接",
+      "expected": {
+        "target": "SPIN1",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "SPIN1",
+        "num_samples": 5,
+        "run_docking": false
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_121",
+      "input": "帮我针对ESR1生成候选分子",
+      "expected": {
+        "target": "ESR1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "ESR1",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": false,
+      "execution": null
+    },
+    {
+      "id": "tc_122",
+      "input": "帮我针对esr1生成候选分子",
+      "expected": {
+        "target": "ESR1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "ESR1",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": false,
+      "execution": null
+    },
+    {
+      "id": "tc_123",
+      "input": "为Esr1设计小分子药物",
+      "expected": {
+        "target": "ESR1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "ESR1",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": false,
+      "execution": null
+    },
+    {
+      "id": "tc_124",
+      "input": "推荐针对HCRTR1的活性小分子",
+      "expected": {
+        "target": "HCRTR1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "HCRTR1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_125",
+      "input": "请对hcrtr1靶点进行分子生成",
+      "expected": {
+        "target": "HCRTR1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "HCRTR1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_126",
+      "input": "为Hcrtr1设计小分子药物",
+      "expected": {
+        "target": "HCRTR1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "HCRTR1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_127",
+      "input": "帮我针对JAK1生成候选分子",
+      "expected": {
+        "target": "JAK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "JAK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_128",
+      "input": "推荐针对jak1的活性小分子",
+      "expected": {
+        "target": "JAK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "JAK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_129",
+      "input": "推荐针对Jak1的活性小分子",
+      "expected": {
+        "target": "JAK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "JAK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_130",
+      "input": "为P2RX3设计小分子药物",
+      "expected": {
+        "target": "P2RX3",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "P2RX3",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_131",
+      "input": "为p2rx3设计小分子药物",
+      "expected": {
+        "target": "P2RX3",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "P2RX3",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_132",
+      "input": "为P2X3受体(P2RX3)设计小分子药物",
+      "expected": {
+        "target": "P2RX3",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "P2RX3",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_133",
+      "input": "为KDM1A设计小分子药物",
+      "expected": {
+        "target": "KDM1A",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "KDM1A",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_134",
+      "input": "请对kdm1a靶点进行分子生成",
+      "expected": {
+        "target": "KDM1A",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "KDM1A",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_135",
+      "input": "帮我针对去甲基化酶KDM1A生成候选分子",
+      "expected": {
+        "target": "KDM1A",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "KDM1A",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_136",
+      "input": "请对IDH1靶点进行分子生成",
+      "expected": {
+        "target": "IDH1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "IDH1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_137",
+      "input": "请对idh1靶点进行分子生成",
+      "expected": {
+        "target": "IDH1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "IDH1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_138",
+      "input": "为异柠檬酸脱氢酶1(IDH1)设计小分子药物",
+      "expected": {
+        "target": "IDH1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "IDH1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_139",
+      "input": "请对RIOK1靶点进行分子生成",
+      "expected": {
+        "target": "RIOK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "RIOK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_140",
+      "input": "推荐针对riok1的活性小分子",
+      "expected": {
+        "target": "RIOK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "RIOK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_141",
+      "input": "请对RIOK1激酶靶点进行分子生成",
+      "expected": {
+        "target": "RIOK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "RIOK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_142",
+      "input": "帮我针对NR4A1生成候选分子",
+      "expected": {
+        "target": "NR4A1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "NR4A1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_143",
+      "input": "帮我针对nr4a1生成候选分子",
+      "expected": {
+        "target": "NR4A1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "NR4A1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_144",
+      "input": "推荐针对核受体NR4A1的活性小分子",
+      "expected": {
+        "target": "NR4A1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "NR4A1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_145",
+      "input": "为GRIK1设计小分子药物",
+      "expected": {
+        "target": "GRIK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "GRIK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_146",
+      "input": "为grik1设计小分子药物",
+      "expected": {
+        "target": "GRIK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "GRIK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_147",
+      "input": "帮我针对谷氨酸受体GRIK1生成候选分子",
+      "expected": {
+        "target": "GRIK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "GRIK1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_148",
+      "input": "请对CCR9靶点进行分子生成",
+      "expected": {
+        "target": "CCR9",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "CCR9",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_149",
+      "input": "推荐针对ccr9的活性小分子",
+      "expected": {
+        "target": "CCR9",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "CCR9",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_150",
+      "input": "请对趋化因子受体CCR9靶点进行分子生成",
+      "expected": {
+        "target": "CCR9",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "CCR9",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    },
+    {
+      "id": "tc_151",
+      "input": "请对FTO靶点进行分子生成",
+      "expected": {
+        "target": "FTO",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "FTO",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": false,
+      "execution": null
+    },
+    {
+      "id": "tc_152",
+      "input": "请对fto靶点进行分子生成",
+      "expected": {
+        "target": "FTO",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "FTO",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": false,
+      "execution": null
+    },
+    {
+      "id": "tc_153",
+      "input": "请对FTO去甲基化酶靶点进行分子生成",
+      "expected": {
+        "target": "FTO",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "FTO",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": false,
+      "execution": null
+    },
+    {
+      "id": "tc_154",
+      "input": "帮我针对SPIN1生成候选分子",
+      "expected": {
+        "target": "SPIN1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "SPIN1",
+        "num_samples": 1,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": false,
+      "execution": null
+    },
+    {
+      "id": "tc_155",
+      "input": "推荐针对spin1的活性小分子",
+      "expected": {
+        "target": "SPIN1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "llm",
+        "target": "SPIN1",
+        "num_samples": 5,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": false,
+      "execution": null
+    },
+    {
+      "id": "tc_156",
+      "input": "帮我针对SPIN1蛋白生成候选分子",
+      "expected": {
+        "target": "SPIN1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "parsed": {
+        "parser": "rules",
+        "target": "SPIN1",
+        "num_samples": 3,
+        "run_docking": true
+      },
+      "intent_correct": true,
+      "param_correct": true,
+      "execution": null
+    }
+  ]
+}
