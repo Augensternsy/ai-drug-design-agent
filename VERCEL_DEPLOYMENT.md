@@ -37,7 +37,7 @@ Environment: Production, Preview, Development
 点击 **Deploy**。部署完成后打开 Vercel 公网地址，验证：
 
 1. 页面启动后向 `${VITE_API_BASE_URL}/api/health` 发起一次健康检查，超时为 5 秒。
-2. 健康检查成功时显示 `Live GPU · RTX 3090`。
+2. 健康检查成功时显示 `API 已连接 · GPU 按需加载`；这表示 API 可达，不证明当前正在执行 GPU 推理。
 3. 失败或超时时显示 `Demo Mode` 和 `Demo / Precomputed Result`，不向后端提交生成或 Vina 请求。
 4. Live 模式可选择全部 12 个靶点、提交任务并轮询任务状态。
 5. 完成后能展示 Rank、SMILES、QED、SA、MolWt、LogP、Lipinski 和 Vina score。

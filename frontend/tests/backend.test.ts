@@ -53,6 +53,9 @@ test("Demo Mode exposes verified SMILES with unavailable metrics marked as null"
   assert.equal(task.candidates[0].sa, null);
   assert.equal(task.candidates[0].vina, null);
   assert.match(task.summary ?? "", /未调用 RTX 3090、RDKit 或 Vina/);
+  assert.match(task.summary ?? "", /并非针对当前所选靶点实时生成/);
+  assert.equal(task.generated, null);
+  assert.equal(task.valid, null);
 });
 
 test("Agent plan defaults are safe when the submit response omits plan", () => {
@@ -99,13 +102,14 @@ test("Agent Tools map backend names and statuses to the five display steps", () 
 
   assert.deepEqual(tools.map((tool) => tool.name), [
     "ESM-2",
-    "DLPS-E2PO",
+    "AP-MolDiff",
     "RDKit",
     "Property Analyzer",
     "AutoDock Vina",
   ]);
-  assert.deepEqual(tools.map((tool) => tool.status), ["completed", "running", "failed", "pending", "pending"]);
-  assert.deepEqual(tools.map((tool) => agentToolStatusIcon(tool.status)), ["✓", "⏳", "✗", "○", "○"]);
+  // Absent backend state is unknown, not evidence that the tool is pending.
+  assert.deepEqual(tools.map((tool) => tool.status), ["completed", "running", "failed", "unknown", "unknown"]);
+  assert.deepEqual(tools.map((tool) => agentToolStatusIcon(tool.status)), ["✓", "⏳", "✗", "?", "?"]);
 });
 
 test("candidate ranking prioritizes Vina, then higher QED and lower SA without mutating input", () => {
@@ -125,8 +129,8 @@ test("candidate ranking prioritizes Vina, then higher QED and lower SA without m
 
 test("analysis report uses the ranked best candidate and real generated count", () => {
   const ranked = rankCandidates([
-    { rank: 2, smiles: "CCO", vina: null, qed: 0.61, sa: 2.3 },
-    { rank: 1, smiles: "CCN", vina: -7.9, qed: 0.51, sa: 3.1 },
+    { rank: 2, smiles: "CCO", valid: true, vina: null, qed: 0.61, sa: 2.3 },
+    { rank: 1, smiles: "CCN", valid: true, vina: -7.9, qed: 0.51, sa: 3.1 },
   ] as Candidate[]);
   const report = buildAnalysisReport({
     task_id: "task-1", target: "ESR1", status: "completed", progress: 100,

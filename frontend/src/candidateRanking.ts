@@ -8,6 +8,7 @@ export function rankCandidates(candidates: Candidate[]): Candidate[] {
   return candidates
     .map((candidate, index) => ({ candidate, index }))
     .sort((left, right) => {
+      if (left.candidate.valid !== right.candidate.valid) return left.candidate.valid ? -1 : 1;
       const leftVina = left.candidate.vina;
       const rightVina = right.candidate.vina;
       const leftHasVina = finiteNumber(leftVina);
@@ -36,13 +37,15 @@ export function buildAnalysisReport(
   rankedCandidates: Candidate[],
   startupEvaluationReport?: AgentEvaluationReport | null,
 ): AnalysisReport | null {
-  if (!task || task.status !== "completed" || rankedCandidates.length === 0) return null;
+  const best = rankedCandidates.find(candidate => candidate.valid);
+  if (!task || !["completed", "failed"].includes(task.status) || !best) return null;
 
   return {
     target: task.target,
-    generated: task.generated ?? rankedCandidates.length,
-    validCandidates: task.valid ?? rankedCandidates.filter((candidate) => candidate.valid).length,
-    bestCandidate: rankedCandidates[0],
+    generated: task.generated,
+    validCandidates: task.valid,
+    partial: task.result_status === "partial" || task.status === "failed",
+    bestCandidate: best,
     evaluationReport: startupEvaluationReport === undefined
       ? task.evaluation_report ?? null
       : startupEvaluationReport,

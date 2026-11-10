@@ -7,6 +7,33 @@ import { createServer } from "vite";
 const server = await createServer({ server: { middlewareMode: true }, appType: "custom", logLevel: "silent" });
 after(async () => server.close());
 
+test("invalid candidates never render SVG or 3D data", async () => {
+  const { MoleculeCard } = await server.ssrLoadModule('/src/components/MoleculeCard.tsx');
+  const html = renderToStaticMarkup(React.createElement(MoleculeCard, { candidate: {
+    rank: 1, smiles: 'invalid', valid: false, qed: null, sa: null, molwt: null, logp: null, lipinski: null, vina: null,
+    molecule_svg: '<svg>should-not-render</svg>', mol_block: 'invalid', structure_svg: null, sdf: null,
+  } }));
+  assert.match(html, /RDKit Invalid/); assert.doesNotMatch(html, /data:image/);
+});
+
+test("active ID restores only for same API; corrupt and legacy history normalize safely", async () => {
+  const values = new Map();
+  const old = globalThis.localStorage;
+  globalThis.localStorage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
+  try {
+    const h = await server.ssrLoadModule('/src/utils/history.ts');
+    h.saveActiveTask('https://example.test', 'test-id');
+    assert.equal(h.loadActiveTask('https://example.test'), 'test-id');
+    assert.equal(h.loadActiveTask('https://other.test'), null);
+    assert.equal(values.get('drug-design-agent:active-task:v1').includes('prompt'), false);
+    h.clearActiveTask('https://example.test', 'wrong-id'); assert.equal(h.loadActiveTask('https://example.test'), 'test-id');
+    h.clearActiveTask('https://example.test', 'test-id'); assert.equal(h.loadActiveTask('https://example.test'), null);
+    values.set('drug-design-agent:recent-tasks:v1', '{broken'); assert.deepEqual(h.loadHistory(), []);
+    values.set('drug-design-agent:recent-tasks:v1', JSON.stringify([{ task: { task_id: 'old', status: 'COMPLETED', candidates: [{ smiles: 'CCO', valid: true }] } }]));
+    assert.equal(h.loadHistory()[0].task.candidates[0].qed, null);
+  } finally { if (old === undefined) delete globalThis.localStorage; else globalThis.localStorage = old; }
+});
+
 test("running task renders the loading UI with real progress fields", async () => {
   const { TaskLoadingCard } = await server.ssrLoadModule("/src/components/TaskLoadingCard.tsx");
   const html = renderToStaticMarkup(React.createElement(TaskLoadingCard, {
@@ -19,7 +46,8 @@ test("running task renders the loading UI with real progress fields", async () =
   }));
 
   assert.match(html, /正在生成候选分子/);
-  assert.match(html, /DLPS-E2PO inference/);
+  assert.match(html, /AP-MolDiff inference/);
+  assert.doesNotMatch(html, /DLPS-E2PO/);
   assert.match(html, /42%/);
   assert.doesNotMatch(html, /生成<\/span><strong>0/);
 });
@@ -97,7 +125,7 @@ test("AI Drug Discovery Pipeline renders all tools and their statuses as cards",
 
   assert.match(html, /AI Drug Discovery Pipeline/);
   assert.match(html, /ESM-2/);
-  assert.match(html, /DLPS-E2PO/);
+  assert.match(html, /AP-MolDiff/);
   assert.match(html, /RDKit/);
   assert.match(html, /Property Analyzer/);
   assert.match(html, /AutoDock Vina/);
@@ -124,7 +152,7 @@ test("AI Analysis Report renders task counts and every best-candidate metric", a
   assert.match(html, /ESR1/);
   assert.match(html, /Generated/);
   assert.match(html, /Valid Candidates/);
-  assert.match(html, /Best Candidate/);
+  assert.match(html, /当前排序第 1 候选/);
   assert.match(html, /-8.24 kcal\/mol/);
   assert.match(html, /0.780/);
   assert.match(html, /2.400/);

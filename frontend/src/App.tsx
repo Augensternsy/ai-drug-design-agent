@@ -4,6 +4,7 @@ import { API_BASE_URL, apiRequest } from "./api";
 import { checkBackendHealth, type BackendMode } from "./backend";
 import { buildAnalysisReport, rankCandidates } from "./candidateRanking";
 import { loadAgentEvaluationReport } from "./agentEvaluation";
+import { displayTaskStage } from "./modelDisplay";
 import { AnalysisReportCard } from "./components/AnalysisReportCard";
 import { DiscoveryPipeline } from "./components/DiscoveryPipeline";
 import { MoleculeCard } from "./components/MoleculeCard";
@@ -12,7 +13,7 @@ import { createVerifiedDemoTask, parseDemoPrompt } from "./demo";
 import { pollTaskUntilTerminal } from "./taskPolling";
 import type { AgentEvaluationReport, AgentGenerateResponse, GenerateResponse, StoredTask, Task } from "./types";
 import { downloadAllSdf, exportTaskCsv, exportTaskJson } from "./utils/exports";
-import { clearHistory, loadHistory, saveTaskToHistory } from "./utils/history";
+import { clearHistory, loadHistory, saveTaskToHistory, loadActiveTask, saveActiveTask, clearActiveTask, validTaskId } from "./utils/history";
 
 const TARGETS = [
   ["ESR1", "2R6W"], ["HCRTR1", "4ZJC"], ["JAK1", "3EYG"], ["P2RX3", "5SVL"],
@@ -30,6 +31,7 @@ const STAGE_LABELS: Record<DisplayStage, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
+  pending: "任务等待执行",
   queued: "任务已提交", running: "正在生成候选分子", processing: "正在生成候选分子",
   loading: "正在生成候选分子", encoding: "正在生成候选分子", generating: "正在生成候选分子",
   evaluating: "正在生成候选分子", docking: "正在生成候选分子", ranking: "正在生成候选分子",
@@ -66,6 +68,11 @@ function App() {
   const [agentPrompt, setAgentPrompt] = useState("");
   const [task, setTask] = useState<Task | null>(null);
   const [taskId, setTaskId] = useState<string | null>(null);
+  const [queryId, setQueryId] = useState("");
+  const [queryRevision, setQueryRevision] = useState(0);
+  const [unresolved, setUnresolved] = useState(false);
+  const submissionLock = useRef(false);
+  const submissionController = useRef<AbortController | null>(null);
   const [submittedWithDocking, setSubmittedWithDocking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -78,7 +85,7 @@ function App() {
   const [evaluationReport, setEvaluationReport] = useState<AgentEvaluationReport | null>(null);
   const lastSavedTask = useRef<string | null>(null);
 
-  const running = submitting || loading;
+  const running = submitting || loading || unresolved;
   const rankedCandidates = useMemo(() => rankCandidates(task?.candidates ?? []), [task?.candidates]);
   const analysisReport = useMemo(
     () => buildAnalysisReport(task, rankedCandidates, evaluationReport),
@@ -87,7 +94,6 @@ function App() {
   const rankedTask = useMemo(() => task ? { ...task, candidates: rankedCandidates } : null, [task, rankedCandidates]);
   const hasDownloadableSdf = rankedCandidates.some((candidate) => Boolean(candidate.mol_block));
   const activeStage = displayStageFor(task?.status ?? "queued");
-  const activeStageIndex = DISPLAY_STAGES.indexOf(activeStage);
   const taskState = task?.status === "failed" ? "failed" : task?.status === "completed" ? "complete" : "running";
   const visibleStages = useMemo(
     () => submittedWithDocking ? DISPLAY_STAGES : DISPLAY_STAGES.filter((stage) => stage !== "docking"),
@@ -101,6 +107,8 @@ function App() {
       if (!active) return;
       setBackendMode(nextMode);
       if (nextMode === "live") {
+        const savedId = loadActiveTask(API_BASE_URL);
+        if (savedId) { setQueryId(savedId); setTaskId(savedId); setUnresolved(true); }
         const report = await loadAgentEvaluationReport(API_BASE_URL);
         if (active) setEvaluationReport(report);
         return;
@@ -110,6 +118,8 @@ function App() {
     })();
     return () => { active = false; };
   }, []);
+
+  useEffect(() => () => { submissionController.current?.abort(); }, []);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -123,13 +133,16 @@ function App() {
     const controller = new AbortController();
     setLoading(true);
     pollTaskUntilTerminal(taskId, {
-      fetchTask: (id) => apiRequest<unknown>(`/api/tasks/${id}`),
-      initialTask: task ?? undefined,
+      fetchTask: (id, signal, timeout) => apiRequest<unknown>(`/api/tasks/${encodeURIComponent(id)}`, { signal }, timeout),
+      initialTask: task?.task_id === taskId ? task : undefined,
       signal: controller.signal,
       onUpdate: (nextTask) => {
         if (!active) return;
         setTask(nextTask);
-        setError(nextTask.status === "failed" ? nextTask.error ?? "任务执行失败，请检查参数后重试。" : null);
+        setSubmittedWithDocking((previous) => previous || nextTask.agent_plan?.run_docking === true
+          || nextTask.tools?.some((tool) => /vina|docking/i.test(tool.name) && tool.status !== "skipped") === true
+          || nextTask.candidates.some((candidate) => candidate.vina != null));
+        setError(nextTask.error ?? (nextTask.status === "failed" ? "任务执行失败，请检查参数后重试。" : null));
       },
       onTransientError: (pollError) => {
         if (!active) return;
@@ -138,18 +151,24 @@ function App() {
     }).then((finalTask) => {
       if (!active) return;
       setTask(finalTask);
-      setError(finalTask.status === "failed" ? finalTask.error ?? "任务执行失败，请检查参数后重试。" : null);
+      setError(finalTask.error ?? (finalTask.status === "failed" ? "任务执行失败，请检查参数后重试。" : null));
       setLoading(false);
+      setUnresolved(false);
+      clearActiveTask(API_BASE_URL, taskId);
     }).catch((pollError) => {
       if (!active || (pollError instanceof DOMException && pollError.name === "AbortError")) return;
       setLoading(false);
+      if (pollError && typeof pollError === "object" && "status" in pollError && pollError.status === 404) {
+        setUnresolved(false);
+        clearActiveTask(API_BASE_URL, taskId);
+      }
       setError(pollError instanceof Error ? pollError.message : "无法获取任务状态，请稍后重试。");
     });
     return () => {
       active = false;
       controller.abort();
     };
-  }, [taskId]); // The submitted task snapshot is intentionally captured once per task id.
+  }, [taskId, queryRevision]);
 
   useEffect(() => {
     if (!task || !["completed", "failed"].includes(task.status) || lastSavedTask.current === task.task_id) return;
@@ -175,7 +194,10 @@ function App() {
   };
 
   const confirmSubmission = async () => {
-    if (!pending || running || cooldown > 0) return;
+    if (!pending || running || cooldown > 0 || submissionLock.current) return;
+    submissionLock.current = true;
+    const controller = new AbortController();
+    submissionController.current = controller;
     const submission = pending;
     setPending(null);
     setSubmitting(true);
@@ -203,31 +225,43 @@ function App() {
       if (submission.kind === "form") {
         setSubmittedWithDocking(submission.docking);
         const response = await apiRequest<GenerateResponse>("/api/generate", {
+          signal: controller.signal,
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             target: submission.target, num_samples: submission.count,
             qed_threshold: submission.qed, sa_threshold: submission.sa, run_docking: submission.docking,
           }),
         });
+        if (!validTaskId(response.task_id ?? "")) throw new Error("创建响应缺少有效任务 ID；请勿重复提交。");
+        saveActiveTask(API_BASE_URL, response.task_id);
+        setUnresolved(true);
+        setQueryId(response.task_id);
         setTaskId(response.task_id);
         setTask(emptyTask(response, submission.target, submission.count));
         setLoading(true);
       } else {
         const response = await apiRequest<AgentGenerateResponse>("/api/agent/generate", {
+          signal: controller.signal,
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt: submission.prompt }),
         });
         const agentPlan = normalizeAgentPlan(response.plan);
         setSubmittedWithDocking(agentPlan.run_docking);
+        if (!validTaskId(response.task_id ?? "")) throw new Error("创建响应缺少有效任务 ID；请勿重复提交。");
+        saveActiveTask(API_BASE_URL, response.task_id);
+        setUnresolved(true);
+        setQueryId(response.task_id);
         setTaskId(response.task_id);
         setTask(emptyTask(response, agentPlan.target, agentPlan.num_samples, true, agentPlan));
         setLoading(true);
       }
       setCooldown(COOLDOWN_SECONDS);
     } catch (submitError) {
+      if (!(submitError && typeof submitError === "object" && "status" in submitError)) setUnresolved(true);
       setLoading(false);
       setError(submitError instanceof Error ? submitError.message : "任务提交失败，请稍后重试。");
     } finally {
+      submissionLock.current = false;
       setSubmitting(false);
     }
   };
@@ -236,13 +270,13 @@ function App() {
     setTaskId(null);
     setLoading(false);
     setTask(item.task);
-    setSubmittedWithDocking(item.task.agent_plan?.run_docking ?? item.task.candidates.some((candidate) => candidate.vina !== null));
+    setSubmittedWithDocking(item.task.agent_plan?.run_docking ?? item.task.candidates.some((candidate) => candidate.vina != null));
     setError(item.task.error);
     setHistoryOpen(false);
   };
 
   const backendLabel = backendMode === "live"
-    ? "GPU 已就绪"
+    ? "API 已连接 · GPU 按需加载"
     : backendMode === "demo"
       ? "Demo Mode"
       : "Checking GPU…";
@@ -260,7 +294,7 @@ function App() {
         </div>
       </header>
 
-      {backendMode === "demo" && <div className="backend-notice demo"><strong>Demo / Precomputed Result</strong><span>RTX 3090 后端当前不可达；页面仅展示既有真实模型 SMILES，不会请求生成或 Vina。</span></div>}
+      {backendMode === "demo" && <div className="backend-notice demo"><strong>Demo / Precomputed Result</strong><span>后端健康检查未通过；仅展示预置 SMILES，不为当前所选靶点实时生成，也不会请求 Vina。</span></div>}
 
       {historyOpen && (
         <aside className="history-panel" aria-label="最近任务">
@@ -279,10 +313,10 @@ function App() {
           <div>
             <p className="eyebrow">Target-guided molecular generation</p>
             <h1>从蛋白靶点出发，<br /><span>生成并筛选候选分子。</span></h1>
-            <p className="hero-copy">Agent 负责任务解析与工具编排；ESM-2、DLPS-E2PO、RDKit 与 AutoDock Vina 完成专业计算。当前实验验证范围为 12 个测试靶点。</p>
+            <p className="hero-copy">Agent 负责任务解析与工具编排；ESM-2、部署模型 AP-MolDiff、RDKit 与可选 AutoDock Vina 完成专业计算。DLPS-E2PO 是模型的偏好优化方法；论文实验范围为 12 个测试靶点。</p>
           </div>
           <div className="pipeline" aria-label="推理流程">
-            {["ESM-2 · Protein encoding", "DLPS-E2PO · Molecule generation", "RDKit + Vina · Evaluate & dock"].map((item, index) => {
+            {["ESM-2 · Protein encoding", "AP-MolDiff · Molecule generation", "RDKit + Vina · Evaluate & optional dock"].map((item, index) => {
               const [title, subtitle] = item.split(" · ");
               return <div className="pipeline-item" key={item}><span>0{index + 1}</span><strong>{title}</strong><small>{subtitle}</small></div>;
             })}
@@ -290,6 +324,23 @@ function App() {
         </section>
 
         <section className="agent-workspace">
+          <form className="task-query" onSubmit={(event) => {
+            event.preventDefault();
+            const id = queryId.trim();
+            if (!validTaskId(id)) { setError("请输入有效 Task ID。"); return; }
+            setError(null); setTask(null); setSubmittedWithDocking(false); setUnresolved(true);
+            saveActiveTask(API_BASE_URL, id); setTaskId(id); setQueryRevision(value => value + 1);
+          }}>
+            <label htmlFor="task-query-id">查询已有 Task ID（只读）</label>
+            <input id="task-query-id" value={queryId} onChange={event => setQueryId(event.target.value)} maxLength={100} />
+            <button disabled={backendMode !== "live" || loading || submitting || !queryId.trim()}>查询 / 继续查询</button>
+            {unresolved && !loading && <span>状态尚未确认；不会自动重新创建任务。</span>}
+            {unresolved && <button type="button" onClick={() => {
+              if (!window.confirm("仅停止本页跟踪，不取消后端任务。请保存 Task ID，避免重复创建。确认停止？")) return;
+              if (taskId) clearActiveTask(API_BASE_URL, taskId);
+              setTaskId(null); setLoading(false); setUnresolved(false);
+            }}>停止本页跟踪</button>}
+          </form>
           <div className="mode-tabs" role="tablist" aria-label="任务输入方式">
             <button type="button" role="tab" aria-selected={mode === "form"} className={mode === "form" ? "active" : ""} onClick={() => setMode("form")}>参数表单</button>
             <button type="button" role="tab" aria-selected={mode === "agent"} className={mode === "agent" ? "active" : ""} onClick={() => setMode("agent")}>自然语言 Agent</button>
@@ -297,7 +348,7 @@ function App() {
 
           {mode === "agent" && (
             <form className="agent-prompt" onSubmit={prepareAgentSubmission}>
-              <label htmlFor="agent-prompt"><span>Agent 指令</span><small>无 LLM Key 时自动使用本地规则解析</small></label>
+              <label htmlFor="agent-prompt"><span>Agent 指令</span><small>后端 LLM 不可用时可回退至规则解析；实际解析方式以任务结果为准</small></label>
               <textarea id="agent-prompt" rows={4} maxLength={500} value={agentPrompt} onChange={(event) => setAgentPrompt(event.target.value)} disabled={running} placeholder="例如：帮我针对 ESR1 生成 5 个候选分子，QED 优先，SA&lt;3.5，并对最优结果进行 Vina 对接。" />
               <div className="agent-prompt__footer"><span>{agentPrompt.length}/500</span><button type="submit" disabled={running || cooldown > 0 || backendMode === "checking" || agentPrompt.trim().length < 3}>{cooldown > 0 ? `${cooldown}s 后可提交` : backendMode === "checking" ? "检查后端中…" : "交给 Agent →"}</button></div>
             </form>
@@ -309,7 +360,7 @@ function App() {
             <div className="section-heading"><div><span>01</span><h2>生成设置</h2></div><p>公开 Demo 单次最多 5 个候选。</p></div>
             <label className="field-label" htmlFor="target">蛋白靶点</label>
             <div className="select-wrap"><select id="target" value={target} onChange={(event) => setTarget(event.target.value)} disabled={running}>{TARGETS.map(([name, pdb]) => <option value={name} key={name}>{name} · PDB {pdb}</option>)}</select></div>
-            <p className="field-hint">仅展示论文实验中的 12 个测试靶点，不宣称对任意靶点均可靠。</p>
+            <p className="field-hint">预置论文实验的 12 个测试靶点；当前已完成的正式生产验收案例为 ESR1。</p>
 
             <label className="field-label" htmlFor="count">生成数量</label>
             <div className="number-control">
@@ -333,11 +384,14 @@ function App() {
             <div className="section-heading"><div><span>02</span><h2>任务进度</h2></div>{task && <code>{task.task_id.slice(0, 8)}</code>}</div>
             {!task ? <div className="empty-state"><div className="molecule-orbit"><i /><i /><i /></div><strong>等待生成任务</strong><p>{mode === "agent" ? "输入自然语言需求，Agent 将展示工具执行状态。" : "提交后可在这里查看生成、评价与对接进度。"}</p></div> : (
               <div className="task-state">
-                <div className={`live-status ${taskState}`} role="status"><span className="live-status-dot" /><div><strong>{STATUS_LABELS[task.status] ?? task.status}</strong><small>{task.target} · {task.requested_by_agent ? `AGENT ${task.agent_plan?.parser ?? "RULES"}` : "FORM"}</small></div></div>
-                {(task.current_stage || task.progress !== null) && <div className="progress-meta">{task.current_stage && <span>{task.current_stage}</span>}{task.progress !== null && <strong>{Math.round(task.progress)}%</strong>}</div>}
+                <div className={`live-status ${taskState}`} role="status"><span className="live-status-dot" /><div><strong>{task.data_origin === "precomputed_demo" ? "预计算结果已载入" : STATUS_LABELS[task.status] ?? task.status}</strong><small>{task.target} · {task.data_origin === "precomputed_demo" ? "DEMO / PRECOMPUTED" : task.parser_mode ? `AGENT ${task.parser_mode.toUpperCase()}` : task.requested_by_agent ? `AGENT ${task.agent_plan?.parser ?? "RULES"}` : "FORM"}</small></div></div>
+                {(task.current_stage || task.progress !== null) && <div className="progress-meta">{task.current_stage && <span>{displayTaskStage(task.current_stage)}</span>}{task.progress !== null && <strong>{Math.round(task.progress)}%</strong>}</div>}
                 {task.progress !== null && <div className="progress-track" role="progressbar" aria-label="任务完成进度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(task.progress)}><div style={{ width: `${task.progress}%` }} /></div>}
-                <ol className="stage-list">{visibleStages.map((stage) => { const index = DISPLAY_STAGES.indexOf(stage); const done = index < activeStageIndex || task.status === "completed"; const active = stage === activeStage && task.status !== "failed"; return <li className={`${done ? "done" : ""} ${active ? "active" : ""}`} key={stage}><span>{done ? "✓" : index + 1}</span><div><strong>{STAGE_LABELS[stage]}</strong><small>{stage}</small></div></li>; })}</ol>
-                <DiscoveryPipeline tools={task.tools} />
+                {task.data_origin !== "precomputed_demo" && <ol className="stage-list">{visibleStages.map((stage) => { const index = DISPLAY_STAGES.indexOf(stage); const active = stage === activeStage && task.status !== "failed"; return <li className={active ? "active" : ""} key={stage}><span>{index + 1}</span><div><strong>{STAGE_LABELS[stage]}</strong><small>{stage}</small></div></li>; })}</ol>}
+                <DiscoveryPipeline tools={task.tools?.length ? task.tools : task.tool_trace} />
+                {task.result_status === "partial" && <p role="alert">部分结果：任务未全部成功，仅展示已保存的候选。</p>}
+                <p>数据来源：{task.data_origin === "synthetic_test" ? "Synthetic test / 合成测试，非生产结果" : task.data_origin === "live_runtime" ? "Live runtime" : task.task_id.startsWith("demo-") ? "Demo / Precomputed Result" : "来源未标注"}</p>
+                {task.agent_plan && <p>{task.data_origin === "precomputed_demo" ? "Demo 参数预览" : "Agent Plan"}：{task.agent_plan.target} · 数量 {task.agent_plan.num_samples} · QED ≥ {task.agent_plan.qed_threshold ?? "N/A"} · SA ≤ {task.agent_plan.sa_threshold ?? "N/A"} · Vina {task.agent_plan.run_docking ? "开启" : "关闭"}</p>}
                 {[task.generated, task.valid, task.returned].some((value) => value !== null) && <div className="task-counts">{task.generated !== null && <span>生成 <strong>{task.generated}</strong></span>}{task.valid !== null && <span>有效 <strong>{task.valid}</strong></span>}{task.returned !== null && <span>返回 <strong>{task.returned}</strong></span>}</div>}
                 {task.summary && <p className="result-summary">{task.summary}</p>}
               </div>
@@ -349,13 +403,13 @@ function App() {
         <section className="results-section">
           <div className="results-header"><div><p className="eyebrow">Ranked candidates</p><h2>候选分子</h2></div><div className="result-actions"><span>{rankedCandidates.length} molecules</span>{rankedTask && rankedCandidates.length ? <><button type="button" onClick={() => exportTaskCsv(rankedTask)}>导出 CSV</button><button type="button" onClick={() => exportTaskJson(rankedTask)}>导出 JSON</button><button type="button" onClick={() => downloadAllSdf(rankedTask)} disabled={!hasDownloadableSdf} title={hasDownloadableSdf ? "合并下载所有可用的 SDF 结构" : "当前结果没有可下载的 3D 结构"}>下载全部 SDF</button></> : null}</div></div>
           {analysisReport && <AnalysisReportCard report={analysisReport} />}
-          {rankedCandidates.length ? <div className="molecule-grid">{rankedCandidates.map((candidate) => <MoleculeCard candidate={candidate} proteinPdb={task?.protein_pdb} key={`${candidate.rank}-${candidate.smiles}`} />)}</div> : loading && task ? <TaskLoadingCard task={task} /> : <div className="results-empty"><span>∿</span><p>任务完成后，经过 RDKit 验证的候选分子将在这里以 2D/3D 卡片展示。</p></div>}
+          {rankedCandidates.length ? <div className="molecule-grid">{rankedCandidates.map((candidate) => <MoleculeCard candidate={candidate} proteinPdb={task?.protein_pdb} key={`${candidate.rank}-${candidate.smiles}`} />)}</div> : loading && task ? <TaskLoadingCard task={task} /> : <div className="results-empty"><span>∿</span><p>{task?.status === "completed" ? "任务已结束，没有返回候选分子。" : task?.status === "failed" ? "任务失败，没有可展示的候选。" : "任务完成后，候选分子将在这里以 2D/3D 卡片展示。"}</p></div>}
         </section>
       </main>
 
-      {pending && <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setPending(null); }}><section className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title"><p className="eyebrow">{backendMode === "demo" ? "Demo disclosure" : "GPU cost check"}</p><h2 id="confirm-title">{backendMode === "demo" ? "确认查看预计算结果？" : "确认提交生成任务？"}</h2><p>{pending.kind === "form" ? `${pending.target} · ${pending.count} 个候选 · Vina ${pending.docking ? "开启" : "关闭"}` : pending.prompt}</p><ul>{backendMode === "demo" ? <><li>当前为 Demo Mode，不会请求 RTX 3090 后端。</li><li>结果来自既有真实模型 SMILES，缺失指标显示 N/A。</li><li>本次不会执行 RDKit、分子生成或 Vina。</li></> : <><li>提交后页面会持续显示任务进度，请保持页面开启。</li><li>公开 Demo 单次最多 5 个候选，提交后进入 15 秒冷却。</li><li>Vina 会增加执行时间；仅在确有需要时开启。</li></>}</ul><div><button type="button" className="secondary-button" onClick={() => setPending(null)}>返回修改</button><button type="button" className="primary-button" onClick={confirmSubmission}>确认</button></div></section></div>}
+      {pending && <div className="dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setPending(null); }}><section className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title"><p className="eyebrow">{backendMode === "demo" ? "Demo disclosure" : "GPU cost check"}</p><h2 id="confirm-title">{backendMode === "demo" ? "确认查看预计算结果？" : "确认提交生成任务？"}</h2><p>{pending.kind === "form" ? `${pending.target} · ${pending.count} 个候选 · Vina ${pending.docking ? "开启" : "关闭"}` : pending.prompt}</p><ul>{backendMode === "demo" ? <><li>当前为 Demo Mode，不会请求 RTX 3090 后端。</li><li>预置 SMILES 不代表为本次所选靶点实时生成；缺失指标显示 N/A。</li><li>本次不会执行 RDKit、分子生成或 Vina。</li></> : <><li>提交后页面会持续显示任务进度，请保持页面开启。</li><li>单次最多 5 个候选，提交后进入 15 秒冷却。</li><li>Vina 会增加执行时间；仅在确有需要时开启。</li></>}</ul><div><button type="button" className="secondary-button" onClick={() => setPending(null)}>返回修改</button><button type="button" className="primary-button" onClick={confirmSubmission}>确认</button></div></section></div>}
 
-      <footer><span>AI Drug Design Agent</span><span>Agent → ESM-2 → DLPS-E2PO → RDKit → AutoDock Vina</span></footer>
+      <footer><span>智能药物设计 Agent 系统</span><span>Agent → ESM-2 → AP-MolDiff → RDKit → 可选 AutoDock Vina</span></footer>
     </div>
   );
 }

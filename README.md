@@ -1,6 +1,6 @@
 # AI Drug Design Agent
 
-面向科研展示与在线 Demo 的靶点条件分子设计与筛选 Agent。用户可以通过结构化表单或自然语言描述任务；Agent 将意图转换为经过 Pydantic 校验的执行计划，再编排 ESM-2、DLPS-E2PO、RDKit 与 AutoDock Vina 完成候选生成、评价、可选对接、排序和展示。
+面向科研展示与在线 Demo 的靶点条件分子设计与筛选 Agent。用户可以通过结构化表单或自然语言描述任务；Agent 将意图转换为经过 Pydantic 校验的执行计划，再编排 ESM-2、部署模型 AP-MolDiff、RDKit 与可选 AutoDock Vina 完成候选生成、评价、对接、排序和展示。DLPS-E2PO 是第四章的偏好优化方法，TG-MolDiff 是第一阶段基础模型。
 
 [![Frontend](https://img.shields.io/badge/Frontend-Vercel-black)](https://frontend-augensternsys-projects.vercel.app)
 [![Backend](https://img.shields.io/badge/Backend-RTX_3090-76B900)](https://bianjilong.tailb99a04.ts.net)
@@ -15,7 +15,7 @@
 - GitHub：<https://github.com/Augensternsy/ai-drug-design-agent>
 - Production API：<https://bianjilong.tailb99a04.ts.net>
 
-前端启动后会在 5 秒内检查生产 API。成功时显示 `Live GPU · RTX 3090`；失败或超时时自动进入 `Demo Mode`，只展示明确标注的既有真实模型 SMILES，不伪装成实时推理结果。
+前端启动后会在 5 秒内检查生产 API。健康检查通过时显示 `API 已连接 · GPU 按需加载`，不代表 GPU 正在执行任务；失败或超时时进入 `Demo Mode`。Demo 展示预置 SMILES，不代表为当前所选靶点实时生成。
 
 ## Demo Screenshots
 
@@ -27,7 +27,7 @@
 | --- |
 | ![Molecule result card](docs/images/molecule-result.png) |
 
-仓库目前没有足以验证来源的真实线上生成、Vina score 和 3D 展开截图，因此没有伪造或错标。待人工补截项见 [docs/SCREENSHOT_CHECKLIST.md](docs/SCREENSHOT_CHECKLIST.md)。
+本地 Windows 前端已通过正式 HTTPS 只读查询同一 ESR1 生产 Task ID，并在论文工作区保存了真实候选、Vina 分数和 RDKit 三维构象截图。这些是本地浏览器查询生产后端的截图，不等同于当前 Vercel 线上版本截图；真正的 Vina 对接位姿不在前端 MolBlock 中。公开展示仍需补截与筛选，见 [截图清单](docs/SCREENSHOT_CHECKLIST.md)。
 
 ## GitHub / Vercel / Backend Architecture
 
@@ -56,8 +56,8 @@ flowchart LR
     RULE --> PLAN
     PLAN --> TOOLS[Agent Tools]
     TOOLS --> ESM[ESM-2]
-    ESM --> E2PO[DLPS-E2PO]
-    E2PO --> RDK[RDKit]
+    ESM --> AP[AP-MolDiff deployed model]
+    AP --> RDK[RDKit]
     RDK --> VINA[AutoDock Vina optional]
     RDK --> RANK[Ranking]
     VINA --> RANK
@@ -65,7 +65,7 @@ flowchart LR
     VIEW --> FE
 ```
 
-LLM 只负责自然语言解析与工具编排，不生成分子、不计算性质，也不替代 DLPS-E2PO 专业生成模型。完整架构和信任边界见 [docs/architecture.md](docs/architecture.md)。
+LLM 只负责自然语言解析与工具编排，不生成分子、不计算性质，也不替代 AP-MolDiff 专业生成模型；DLPS-E2PO 指偏好优化方法。完整架构和信任边界见 [docs/architecture.md](docs/architecture.md)。
 
 ## Agent Workflow
 
@@ -90,12 +90,12 @@ flowchart TD
 
 - 参数表单与自然语言 Agent 双入口
 - 结构化 `AgentPlan`、Pydantic 校验与可见 Tool trace
-- ESM-2 蛋白表征与 DLPS-E2PO 条件分子生成
+- ESM-2 蛋白表征与 AP-MolDiff 条件分子生成（采用 DLPS-E2PO 偏好优化方法）
 - RDKit Validity、QED、SA、MolWt、LogP、Lipinski 评价
 - 可选 AutoDock Vina 对接与候选排序
 - RDKit 2D SVG、3D SDF 和按需加载的 3Dmol.js 查看器
 - SMILES 复制、SDF/CSV/JSON 导出与 localStorage 最近任务
-- GPU 冷启动、生成失败、Vina 失败和 API 错误的友好状态
+- 任务等待、生成失败、Vina 失败和 API 错误的友好状态
 - LLM rule fallback、参数白名单、请求冷却和 Demo 模式
 
 ## Tech Stack
@@ -104,7 +104,7 @@ flowchart TD
 | --- | --- |
 | Frontend | React 19, TypeScript, Vite, 3Dmol.js, Vercel |
 | API / Agent | FastAPI, Pydantic, Python, OpenAI-compatible HTTP API, rule parser |
-| ML | PyTorch, CUDA, ESM-2, DLPS-E2PO |
+| ML | PyTorch, CUDA, ESM-2, AP-MolDiff；DLPS-E2PO 偏好优化方法 |
 | Cheminformatics | RDKit, Meeko, AutoDock Vina |
 | Cloud | Modal Serverless GPU, Modal Volume; optional RunPod |
 | Quality | unittest/mock, compileall, TypeScript production build |
@@ -112,6 +112,8 @@ flowchart TD
 ## Supported Targets
 
 当前论文实验正式验证范围和公开 Demo 白名单均为以下 12 个测试靶点：
+
+当前已有的正式生产端到端验收案例为 ESR1 单任务；12 个测试靶点的论文实验范围不等于这 12 个靶点均已完成相同的生产验收。
 
 | Target | PDB | Target | PDB |
 | --- | --- | --- | --- |

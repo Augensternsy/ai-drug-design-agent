@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type MoleculeViewer3DProps = {
   molBlock: string;
@@ -8,9 +8,11 @@ type MoleculeViewer3DProps = {
 
 export function MoleculeViewer3D({ molBlock, proteinPdb, label }: MoleculeViewer3DProps) {
   const container = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     if (!container.current) return;
+    setError(false);
     let disposed = false;
     let viewer: ReturnType<(typeof import("3dmol"))["createViewer"]> | null = null;
     let resizeObserver: ResizeObserver | null = null;
@@ -43,7 +45,7 @@ export function MoleculeViewer3D({ molBlock, proteinPdb, label }: MoleculeViewer
         resizeObserver.observe(element);
       }
       window.addEventListener("resize", fitMolecule);
-    });
+    }).catch(() => { if (!disposed) setError(true); });
     return () => {
       disposed = true;
       resizeObserver?.disconnect();
@@ -52,5 +54,5 @@ export function MoleculeViewer3D({ molBlock, proteinPdb, label }: MoleculeViewer
     };
   }, [molBlock, proteinPdb]);
 
-  return <div className="molecule-viewer-3d" ref={container} role="img" aria-label={label} data-viewer-mode={proteinPdb ? "complex" : "ligand"} />;
+  return <><div className="molecule-viewer-3d" ref={container} role="img" aria-label={label} data-viewer-mode={proteinPdb ? "complex" : "ligand"} />{error && <p role="alert">3D 结构加载失败，请查看 2D 或下载 SDF。</p>}</>;
 }

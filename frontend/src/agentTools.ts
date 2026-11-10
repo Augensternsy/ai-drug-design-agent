@@ -1,13 +1,13 @@
 import type { AgentTool } from "./types";
 
 type DisplayAgentTool = AgentTool & {
-  status: "completed" | "running" | "pending" | "failed";
+  status: "completed" | "running" | "pending" | "failed" | "skipped" | "unknown";
   description: string;
 };
 
 const TOOL_DEFINITIONS = [
   { name: "ESM-2", description: "Protein encoding", aliases: ["esm2", "esm2encoding", "esm2proteinencoding", "proteinencoding", "encodeprotein"] },
-  { name: "DLPS-E2PO", description: "Molecule generation", aliases: ["dlpse2po", "dlpse2pogeneration", "generatemolecules", "moleculegeneration"] },
+  { name: "AP-MolDiff", description: "Molecule generation", aliases: ["apmoldiff", "apmoldiffgeneration", "dlpse2po", "dlpse2pogeneration", "generatemolecules", "moleculegeneration"] },
   { name: "RDKit", description: "Structure validation", aliases: ["rdkit", "rdkitvalidation", "validatemolecules", "moleculevalidation"] },
   { name: "Property Analyzer", description: "Property evaluation", aliases: ["propertyevaluation", "evaluateproperties", "molecularproperties"] },
   { name: "AutoDock Vina", description: "Molecular docking", aliases: ["autodockvina", "autodockvinadocking", "moleculardocking", "vinadocking", "docking"] },
@@ -19,7 +19,7 @@ function normalizedName(value: string): string {
 
 function normalizedStatus(status?: string): DisplayAgentTool["status"] {
   const value = status?.toLowerCase();
-  return value === "completed" || value === "running" || value === "failed" ? value : "pending";
+  return value === "completed" || value === "running" || value === "failed" || value === "pending" || value === "skipped" ? value : "unknown";
 }
 
 export function displayAgentTools(tools?: AgentTool[]): DisplayAgentTool[] {
@@ -34,5 +34,7 @@ export function agentToolStatusIcon(status: string): string {
   if (status === "completed") return "✓";
   if (status === "running") return "⏳";
   if (status === "failed") return "✗";
+  if (status === "skipped") return "—";
+  if (status === "unknown") return "?";
   return "○";
 }

@@ -1,6 +1,6 @@
 # System Architecture
 
-本文描述公开 Demo 的组件边界、Agent Tool Calling 顺序和云部署拓扑。LLM/Rule Parser 只把自然语言转换为结构化计划；ESM-2、DLPS-E2PO、RDKit 和 AutoDock Vina 才承担专业计算。
+本文描述公开 Demo 的组件边界、Agent Tool Calling 顺序和云部署拓扑。LLM/Rule Parser 只把自然语言转换为结构化计划；ESM-2、部署模型 AP-MolDiff、RDKit 和可选 AutoDock Vina 才承担专业计算。DLPS-E2PO 指偏好优化方法。
 
 ## 1. 系统总体架构
 
@@ -16,8 +16,8 @@ flowchart LR
     RULE --> PLAN
     PLAN --> TOOLS[Agent Tools]
     TOOLS --> ESM[ESM-2]
-    ESM --> E2PO[DLPS-E2PO]
-    E2PO --> RDK[RDKit]
+    ESM --> AP[AP-MolDiff]
+    AP --> RDK[RDKit]
     RDK --> D{Docking requested?}
     D -->|yes| VINA[AutoDock Vina]
     D -->|no| RANK[Ranking]
@@ -31,7 +31,7 @@ flowchart LR
 - `FastAPI` 接收请求、校验参数并提供异步任务状态。
 - `Agent Orchestrator` 负责理解任务、选择工具和保存 Tool trace，不执行专业计算。
 - `LLM Parser` 仅在配置完整且响应通过 Pydantic 校验时使用；否则进入 `Rule Fallback`。
-- `DLPS-E2PO` 是专业分子生成模型；LLM 不替代它。
+- `AP-MolDiff` 是系统部署的专业分子生成模型；`DLPS-E2PO` 是其偏好优化方法。LLM 不替代专业模型。
 - `RDKit` 负责结构有效性、性质、2D SVG 和 3D SDF；Vina 只在显式请求时运行。
 
 ## 2. Agent Tool Calling 流程
@@ -57,7 +57,7 @@ sequenceDiagram
     end
     Agent->>Tools: resolve_target
     Agent->>Tools: generate_molecules
-    Tools->>Tools: ESM-2 to DLPS-E2PO
+    Tools->>Tools: ESM-2 to AP-MolDiff
     Agent->>Tools: evaluate_properties
     Tools->>Tools: RDKit metrics, SVG and SDF
     opt run_docking=true
@@ -79,7 +79,7 @@ sequenceDiagram
 | Tool | Responsibility |
 | --- | --- |
 | `resolve_target` | 验证 12 靶点白名单并解析序列/结构资产 |
-| `generate_molecules` | 调用 ESM-2 与 DLPS-E2PO 生成候选 |
+| `generate_molecules` | 调用 ESM-2 与 AP-MolDiff 生成候选；DLPS-E2PO 为偏好优化方法 |
 | `evaluate_properties` | 使用 RDKit 验证并计算分子指标 |
 | `molecular_docking` | 按需准备配体并调用 AutoDock Vina |
 | `rank_candidates` | 根据请求目标和可用指标排序 |

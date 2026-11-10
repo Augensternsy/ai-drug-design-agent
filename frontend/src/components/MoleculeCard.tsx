@@ -11,7 +11,7 @@ export function MoleculeCard({ candidate, proteinPdb }: { candidate: Candidate; 
   const [viewMode, setViewMode] = useState<"2d" | "3d" | "complex">("2d");
   const [copied, setCopied] = useState(false);
   const [zoom, setZoom] = useState(1);
-  const moleculeSvg = candidate.molecule_svg ?? candidate.structure_svg;
+  const moleculeSvg = candidate.valid ? candidate.molecule_svg ?? candidate.structure_svg : null;
   const svgUrl = moleculeSvg
     ? moleculeSvg.startsWith("data:image/svg+xml")
       ? moleculeSvg
@@ -37,7 +37,8 @@ export function MoleculeCard({ candidate, proteinPdb }: { candidate: Candidate; 
         <button type="button" className={viewMode === "complex" ? "active" : ""} onClick={() => setViewMode("complex")}>结合模式</button>
       </div>
       <div className="molecule-canvas">
-        {viewMode === "2d" && (svgUrl ? <>
+        {!candidate.valid && <p role="alert">RDKit Invalid / 未确认有效：不渲染该候选结构</p>}
+        {candidate.valid && viewMode === "2d" && (svgUrl ? <>
           <div className="molecule-2d-viewport"><img src={svgUrl} alt={`候选分子 ${candidate.rank} 的二维结构`} style={{ transform: `scale(${zoom})` }} /></div>
           <div className="molecule-zoom-controls" role="group" aria-label="二维结构缩放">
             <button type="button" aria-label="缩小二维结构" onClick={() => setZoom((value) => Math.max(0.75, value - 0.25))} disabled={zoom <= 0.75}>−</button>
@@ -45,14 +46,15 @@ export function MoleculeCard({ candidate, proteinPdb }: { candidate: Candidate; 
             <button type="button" aria-label="放大二维结构" onClick={() => setZoom((value) => Math.min(2.5, value + 0.25))} disabled={zoom >= 2.5}>+</button>
           </div>
         </> : <p>二维结构生成中</p>)}
-        {viewMode === "3d" && (candidate.mol_block
-          ? <MoleculeViewer3D molBlock={candidate.mol_block} label={`候选分子 ${candidate.rank} 的三维构象`} />
+        {candidate.valid && viewMode === "3d" && (candidate.mol_block || candidate.sdf
+          ? <MoleculeViewer3D molBlock={candidate.mol_block || candidate.sdf!} label={`候选分子 ${candidate.rank} 的三维构象`} />
           : <p>3D 结构暂不可用</p>)}
-        {viewMode === "complex" && (candidate.mol_block
-          ? <MoleculeViewer3D molBlock={candidate.mol_block} proteinPdb={proteinPdb} label={proteinPdb ? `候选分子 ${candidate.rank} 的蛋白-配体结合模式` : `候选分子 ${candidate.rank} 的三维构象`} />
+        {candidate.valid && viewMode === "complex" && (candidate.mol_block || candidate.sdf
+          ? <MoleculeViewer3D molBlock={candidate.mol_block || candidate.sdf!} proteinPdb={proteinPdb} label={proteinPdb ? `候选分子 ${candidate.rank} 的蛋白-配体结合模式` : `候选分子 ${candidate.rank} 的三维构象`} />
           : <p>3D 结构暂不可用</p>)}
       </div>
 
+      {viewMode === "complex" && <p>结构共显；配体构象不等同于已认证的 Vina 对接位姿。</p>}
       <dl className="metric-grid">
         <div><dt>QED</dt><dd>{metric(candidate.qed)}</dd></div>
         <div><dt>SA</dt><dd>{metric(candidate.sa)}</dd></div>

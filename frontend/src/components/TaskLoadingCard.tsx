@@ -1,4 +1,5 @@
 import type { Task } from "../types";
+import { displayTaskStage } from "../modelDisplay";
 
 function available(value: number | null): value is number {
   return value !== null && Number.isFinite(value);
@@ -18,11 +19,11 @@ export function TaskLoadingCard({ task }: { task: Task }) {
       <div className="task-loading-card__body">
         <p className="eyebrow">Inference in progress</p>
         <h3>正在生成候选分子</h3>
-        <p>RTX 3090 正在执行 DLPS-E2PO 推理与性质筛选</p>
+        <p>AP-MolDiff 推理与性质筛选任务处理中；具体执行阶段以任务状态为准</p>
         <small>请稍候...</small>
         {(task.current_stage || available(task.progress)) && (
           <div className="task-loading-card__stage">
-            {task.current_stage && <span>{task.current_stage}</span>}
+            {task.current_stage && <span>{displayTaskStage(task.current_stage)}</span>}
             {available(task.progress) && <strong>{Math.round(task.progress)}%</strong>}
           </div>
         )}

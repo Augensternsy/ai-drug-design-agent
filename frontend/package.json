@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "check": "tsc -b",
-    "test": "node --experimental-strip-types --test tests/backend.test.ts tests/taskPolling.test.ts tests/rendering.test.mjs",
+    "test": "node --experimental-strip-types --test tests/backend.test.ts tests/taskPolling.test.ts tests/delivery.test.ts tests/rendering.test.mjs",
     "test:mock": "npm test",
     "preview": "vite preview"
   },

@@ -8,6 +8,7 @@ export type Candidate = {
   logp: number | null;
   lipinski: boolean | null;
   vina?: number | null;
+  vina_source?: string | null;
   molecule_svg?: string;
   mol_block?: string | null;
   structure_svg: string | null;
@@ -16,8 +17,9 @@ export type Candidate = {
 
 export type AnalysisReport = {
   target: string;
-  generated: number;
-  validCandidates: number;
+  generated: number | null;
+  validCandidates: number | null;
+  partial?: boolean;
   bestCandidate: Candidate;
   evaluationReport: AgentEvaluationReport | null;
 };
@@ -52,6 +54,9 @@ export type AgentTool = {
 };
 
 export type Task = {
+  parser_mode?: "rules" | "llm";
+  result_status?: "none" | "complete" | "partial";
+  data_origin?: string;
   task_id: string;
   target: string;
   protein_pdb?: string | null;
