@@ -324,6 +324,8 @@ function App() {
         </section>
 
         <section className="agent-workspace">
+          <details className="task-recovery">
+            <summary>高级功能 / 任务恢复</summary>
           <form className="task-query" onSubmit={(event) => {
             event.preventDefault();
             const id = queryId.trim();
@@ -341,6 +343,7 @@ function App() {
               setTaskId(null); setLoading(false); setUnresolved(false);
             }}>停止本页跟踪</button>}
           </form>
+          </details>
           <div className="mode-tabs" role="tablist" aria-label="任务输入方式">
             <button type="button" role="tab" aria-selected={mode === "form"} className={mode === "form" ? "active" : ""} onClick={() => setMode("form")}>参数表单</button>
             <button type="button" role="tab" aria-selected={mode === "agent"} className={mode === "agent" ? "active" : ""} onClick={() => setMode("agent")}>自然语言 Agent</button>
