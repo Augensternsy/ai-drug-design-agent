@@ -3,27 +3,28 @@ import { createRoot } from "react-dom/client";
 import { BindingFigure } from "../src/components/BindingFigure";
 import "../src/styles.css";
 
-const taskId = "75b670c8-faad-4c17-803c-cc17c9f8158f";
+const taskId = new URLSearchParams(location.search).get("task") ?? "75b670c8-faad-4c17-803c-cc17c9f8158f";
 const path = `/api/tasks/${taskId}/binding-figures/0`;
 const scenario = new URLSearchParams(location.search).get("scenario") ?? "success";
 localStorage.removeItem(`drug-design-agent:binding-ready:${path}`);
+sessionStorage.removeItem(`drug-design-agent:binding-submitted:${path}`);
 const calls: string[] = [];
 let gets = 0;
 const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/lXcAAAAASUVORK5CYII=";
 const originalFetch = window.fetch.bind(window);
 window.fetch = async (input, init) => {
   const url = String(input);
-  if (!url.includes(path)) return originalFetch(input, init);
+  if (!url.includes(path) || scenario === "real") return originalFetch(input, init);
   const method = init?.method ?? "GET";
   calls.push(`${method} ${url}`);
   document.getElementById("calls")!.textContent = calls.join("\n");
   if (method === "POST" && scenario === "locked") return new Response(JSON.stringify({ detail: "Palette locked" }), { status: 409 });
   if (scenario === "network") throw new TypeError("offline");
   if (scenario === "missing") return new Response(JSON.stringify({ detail: "Unknown task" }), { status: 404 });
-  const state = method === "POST" ? "rendering" : scenario === "failed" ? "failed" : (++gets < 2 && scenario === "success") ? "rendering" : "ready";
+  const state = scenario === "pose-unavailable" ? "unavailable" : scenario === "pose-failed" || scenario === "render-failed" ? "failed" : method === "POST" ? "rendering" : (++gets < 2 && scenario === "success") ? "rendering" : "ready";
   return new Response(JSON.stringify({ task_id: taskId, candidate_index: 0, state,
     palette_id: scenario === "locked" ? 1 : 7, image_url: state === "ready" ? scenario === "broken-image" ? "/missing-binding-figure.png" : png : null,
-    message: state === "failed" ? "Rendering failed" : null }), { status: 200, headers: { "Content-Type": "application/json" } });
+    message: scenario === "pose-unavailable" || scenario === "pose-failed" ? "No verified Vina pose for this candidate" : state === "failed" ? "Rendering failed" : null }), { status: 200, headers: { "Content-Type": "application/json" } });
 };
 
 document.body.style.padding = "24px";

@@ -13,6 +13,10 @@ export function hasVerifiedPoseReadyForRendering(status: FigureStatus): boolean 
   return status.state === "unavailable" && /verified pose available; request rendering/i.test(status.message ?? "");
 }
 
+export function isMissingVerifiedVinaPose(status: FigureStatus | null): boolean {
+  return (status?.state === "unavailable" || status?.state === "failed") && /no verified vina pose for this candidate/i.test(status.message ?? "");
+}
+
 export function figurePath(taskId: string, candidateIndex: number): string {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(taskId) || !Number.isInteger(candidateIndex) || candidateIndex < 0) {
     throw new Error("无效的 Task ID 或候选索引");

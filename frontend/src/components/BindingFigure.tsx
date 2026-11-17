@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { API_BASE_URL } from "../api";
-import { getFigure, hasVerifiedPoseReadyForRendering, renderFigure, type FigureStatus } from "../bindingFigureApi";
+import { getFigure, hasVerifiedPoseReadyForRendering, isMissingVerifiedVinaPose, renderFigure, type FigureStatus } from "../bindingFigureApi";
 import { ApiError } from "../httpClient";
 import { MoleculeViewer3D } from "./MoleculeViewer3D";
 
@@ -79,16 +79,17 @@ export function BindingFigure({ taskId, candidateIndex, requestedPalette, molBlo
 
   const imageUrl = status?.image_url && API_BASE_URL
     ? new URL(status.image_url, `${API_BASE_URL}/`).href : null;
+  const missingPose = isMissingVerifiedVinaPose(status);
   return <div className="binding-figure">
     <div className="binding-figure__controls">
-      {status?.palette_id != null && phase !== "unavailable" && <span>已固定配色 {status.palette_id}</span>}
+      {status?.palette_id != null && phase !== "unavailable" && !missingPose && <span>已固定配色 {status.palette_id}</span>}
     </div>
     {phase === "idle" && <p>准备查询真实结合图…</p>}
     {phase === "ready" && message && <p role="status">{message}</p>}
     {(phase === "loading" || phase === "rendering") && <p role="status">正在生成真实结合图…</p>}
     {phase === "ready" && imageUrl && !imageFailed && <img className="binding-figure__image" src={imageUrl} alt={`真实蛋白质–配体结合图，配色 ${status?.palette_id ?? "未知"}`} onError={() => { setImageFailed(true); setMessage("图片加载失败，已切换至三维结构查看。"); }} />}
     {(phase === "failed" || phase === "unavailable" || imageFailed || (phase === "ready" && !imageUrl)) && <>
-      <p role="status">{phase === "unavailable" ? "当前任务未保存真实对接位姿，无法生成蛋白质–配体结合图。Vina评分仍可正常查看。" : message || "真实结合图不可用，显示原有三维结构。"}</p>
+      <p role="status">{missingPose ? "当前任务未保存真实对接位姿，无法生成蛋白质–配体结合图。Vina评分仍可正常查看。" : message || "真实结合图不可用，显示原有三维结构。"}</p>
       {molBlock ? <MoleculeViewer3D molBlock={molBlock} proteinPdb={proteinPdb} label="蛋白–配体三维结构共显（非认证对接位姿）" /> : <p>3D 结构暂不可用</p>}
     </>}
   </div>;
