@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { API_BASE_URL } from "../api";
-import { getFigure, renderFigure, type FigureStatus } from "../bindingFigureApi";
+import { getFigure, hasVerifiedPoseReadyForRendering, renderFigure, type FigureStatus } from "../bindingFigureApi";
 import { ApiError } from "../httpClient";
 import { MoleculeViewer3D } from "./MoleculeViewer3D";
 
@@ -32,7 +32,7 @@ export function BindingFigure({ taskId, candidateIndex, requestedPalette, molBlo
           ? await submit(requestedPalette) : await getFigure(API_BASE_URL, path);
         if (cancelled) return;
         let next = initial;
-        if (requestedPalette === undefined && !previouslySubmitted && initial.state === "unavailable") next = await submit();
+        if (requestedPalette === undefined && !previouslySubmitted && hasVerifiedPoseReadyForRendering(initial)) next = await submit();
         if (cancelled) return;
         setStatus(next); setPhase(toPhase(next)); setMessage(next.message ?? "");
       } catch (error) {
@@ -81,14 +81,14 @@ export function BindingFigure({ taskId, candidateIndex, requestedPalette, molBlo
     ? new URL(status.image_url, `${API_BASE_URL}/`).href : null;
   return <div className="binding-figure">
     <div className="binding-figure__controls">
-      {status?.palette_id != null && <span>已固定配色 {status.palette_id}</span>}
+      {status?.palette_id != null && phase !== "unavailable" && <span>已固定配色 {status.palette_id}</span>}
     </div>
     {phase === "idle" && <p>准备查询真实结合图…</p>}
     {phase === "ready" && message && <p role="status">{message}</p>}
     {(phase === "loading" || phase === "rendering") && <p role="status">正在生成真实结合图…</p>}
     {phase === "ready" && imageUrl && !imageFailed && <img className="binding-figure__image" src={imageUrl} alt={`真实蛋白质–配体结合图，配色 ${status?.palette_id ?? "未知"}`} onError={() => { setImageFailed(true); setMessage("图片加载失败，已切换至三维结构查看。"); }} />}
     {(phase === "failed" || phase === "unavailable" || imageFailed || (phase === "ready" && !imageUrl)) && <>
-      <p role="status">{message || "真实结合图不可用，显示原有三维结构。"}</p>
+      <p role="status">{phase === "unavailable" ? "当前任务未保存真实对接位姿，无法生成蛋白质–配体结合图。Vina评分仍可正常查看。" : message || "真实结合图不可用，显示原有三维结构。"}</p>
       {molBlock ? <MoleculeViewer3D molBlock={molBlock} proteinPdb={proteinPdb} label="蛋白–配体三维结构共显（非认证对接位姿）" /> : <p>3D 结构暂不可用</p>}
     </>}
   </div>;

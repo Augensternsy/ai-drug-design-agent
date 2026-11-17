@@ -8,7 +8,9 @@ const server = await createServer({ server: { middlewareMode: true }, appType: "
 after(async () => server.close());
 
 test("binding figure uses selected palette before status polling and handles locked palette", async () => {
-  const { figurePath, getFigure, renderFigure } = await server.ssrLoadModule('/src/bindingFigureApi.ts');
+  const { figurePath, getFigure, renderFigure, hasVerifiedPoseReadyForRendering } = await server.ssrLoadModule('/src/bindingFigureApi.ts');
+  assert.equal(hasVerifiedPoseReadyForRendering({ state: 'unavailable', message: 'Verified pose available; request rendering' }), true);
+  assert.equal(hasVerifiedPoseReadyForRendering({ state: 'unavailable', message: 'No verified pose for this candidate', palette_id: 1 }), false);
   const { ApiError } = await server.ssrLoadModule('/src/httpClient.ts');
   const path = figurePath('75b670c8-faad-4c17-803c-cc17c9f8158f', 0);
   const calls = [];
