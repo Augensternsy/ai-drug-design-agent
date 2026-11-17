@@ -4,12 +4,9 @@ import { getFigure, renderFigure, type FigureStatus } from "../bindingFigureApi"
 import { ApiError } from "../httpClient";
 import { MoleculeViewer3D } from "./MoleculeViewer3D";
 
-export function BindingFigure({ taskId, candidateIndex, molBlock, proteinPdb }: {
-  taskId?: string; candidateIndex?: number; molBlock?: string | null; proteinPdb?: string | null;
+export function BindingFigure({ taskId, candidateIndex, requestedPalette, molBlock, proteinPdb }: {
+  taskId?: string; candidateIndex?: number; requestedPalette?: number; molBlock?: string | null; proteinPdb?: string | null;
 }) {
-  const [palette, setPalette] = useState(1);
-  const [manualPalette, setManualPalette] = useState(false);
-  const [autoSelected, setAutoSelected] = useState(false);
   const [status, setStatus] = useState<FigureStatus | null>(null);
   const [phase, setPhase] = useState<"idle" | "loading" | "ready" | "rendering" | "unavailable" | "failed">("idle");
   const [message, setMessage] = useState("");
@@ -18,24 +15,43 @@ export function BindingFigure({ taskId, candidateIndex, molBlock, proteinPdb }: 
   const path = taskId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(taskId) && Number.isInteger(candidateIndex) && candidateIndex! >= 0
     ? `/api/tasks/${encodeURIComponent(taskId)}/binding-figures/${candidateIndex}` : null;
   const knownReadyKey = path ? `drug-design-agent:binding-ready:${path}` : null;
+  const submittedKey = path ? `drug-design-agent:binding-submitted:${path}` : null;
 
   useEffect(() => {
-    setStatus(null); setPhase("idle"); setMessage(""); setImageFailed(false); setManualPalette(false); setAutoSelected(false); busy.current = false;
+    setStatus(null); setPhase("idle"); setMessage(""); setImageFailed(false); busy.current = false;
   }, [taskId, candidateIndex]);
 
   useEffect(() => {
-    if (!path || !knownReadyKey || localStorage.getItem(knownReadyKey) !== "1") return;
+    if (!path || !submittedKey) return;
     let cancelled = false;
     setPhase("loading");
-    void getFigure(API_BASE_URL, path).then(next => {
-      if (cancelled) return;
-      setStatus(next);
-      if (next.palette_id != null) setPalette(next.palette_id);
-      setPhase(next.state === "queued" || next.state === "pending" || next.state === "rendering" ? "rendering" : next.state);
-      setMessage(next.message ?? "");
-    }).catch(error => { if (!cancelled) { setPhase("failed"); setMessage(error instanceof Error ? error.message : "恢复结合图失败"); } });
+    void (async () => {
+      try {
+        const previouslySubmitted = sessionStorage.getItem(submittedKey) === "1";
+        const initial = requestedPalette !== undefined && !previouslySubmitted
+          ? await submit(requestedPalette) : await getFigure(API_BASE_URL, path);
+        if (cancelled) return;
+        let next = initial;
+        if (requestedPalette === undefined && !previouslySubmitted && initial.state === "unavailable") next = await submit();
+        if (cancelled) return;
+        setStatus(next); setPhase(toPhase(next)); setMessage(next.message ?? "");
+      } catch (error) {
+        if (cancelled) return;
+        if (error instanceof ApiError && error.status === 409) {
+          try { const next = await getFigure(API_BASE_URL, path); if (!cancelled) { setStatus(next); setPhase(toPhase(next)); setMessage("该候选配色已锁定；已读取原有结果。"); } } catch (lookupError) { if (!cancelled) { setPhase("failed"); setMessage(String(lookupError)); } }
+        } else { setPhase("failed"); setMessage(error instanceof Error ? error.message : "结合图请求失败"); }
+      }
+    })();
     return () => { cancelled = true; };
-  }, [path, knownReadyKey]);
+  }, [path, submittedKey, requestedPalette]);
+
+  function toPhase(next: FigureStatus) { return next.state === "queued" || next.state === "pending" || next.state === "rendering" ? "rendering" : next.state; }
+  async function submit(paletteId?: number) {
+    if (!path || !submittedKey) throw new Error("无效的任务");
+    if (sessionStorage.getItem(submittedKey) === "1") return getFigure(API_BASE_URL, path);
+    sessionStorage.setItem(submittedKey, "1");
+    return renderFigure(API_BASE_URL, path, paletteId);
+  }
 
   useEffect(() => {
     if (status?.state === "ready" && knownReadyKey) localStorage.setItem(knownReadyKey, "1");
@@ -53,7 +69,6 @@ export function BindingFigure({ taskId, candidateIndex, molBlock, proteinPdb }: 
         const next = await getFigure(API_BASE_URL, path);
         if (cancelled) return;
         setStatus(next);
-        if (next.palette_id != null) setPalette(next.palette_id);
         if (next.state === "ready") setPhase("ready");
         else if (next.state === "failed" || next.state === "unavailable") { setPhase(next.state); setMessage(next.message ?? "结合图不可用"); }
       } catch (error) { if (!cancelled) { setPhase("failed"); setMessage(error instanceof Error ? error.message : "查询结合图失败"); } }
@@ -62,55 +77,16 @@ export function BindingFigure({ taskId, candidateIndex, molBlock, proteinPdb }: 
     return () => { cancelled = true; window.clearInterval(timer); };
   }, [path, phase]);
 
-  async function loadExisting(locked = false) {
-    if (!path || busy.current) return;
-    busy.current = true; setPhase("loading"); setMessage("");
-    try {
-      const next = await getFigure(API_BASE_URL, path);
-      setStatus(next);
-      if (next.palette_id != null) setPalette(next.palette_id);
-      setPhase(next.state === "queued" || next.state === "pending" || next.state === "rendering" ? "rendering" : next.state);
-      setMessage(locked ? "该候选已固定配色；已加载现有结果。" : next.message ?? "");
-    } catch (error) { setPhase("failed"); setMessage(error instanceof Error ? error.message : "查询结合图失败"); }
-    finally { busy.current = false; }
-  }
-
-  async function render() {
-    if (!path || busy.current || phase === "rendering" || phase === "ready") return;
-    busy.current = true; setPhase("loading"); setMessage("");
-    try {
-      const next = await renderFigure(API_BASE_URL, path, manualPalette ? palette : undefined);
-      setAutoSelected(!manualPalette);
-      setStatus(next);
-      if (next.palette_id != null) setPalette(next.palette_id);
-      setPhase(next.state === "queued" || next.state === "pending" || next.state === "rendering" ? "rendering" : next.state);
-      setMessage(next.message ?? "");
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 409) {
-        setMessage("该候选已固定配色；正在读取现有结果。" );
-        busy.current = false;
-        await loadExisting(true);
-        return;
-      }
-      setPhase("failed"); setMessage(error instanceof Error ? error.message : "结合图生成请求失败");
-    } finally { busy.current = false; }
-  }
-
   const imageUrl = status?.image_url && API_BASE_URL
     ? new URL(status.image_url, `${API_BASE_URL}/`).href : null;
   return <div className="binding-figure">
     <div className="binding-figure__controls">
-      <details className="binding-figure__advanced"><summary>高级设置 / 手动配色</summary><label><input type="checkbox" checked={manualPalette} disabled={status?.palette_id != null || phase === "loading" || phase === "rendering"} onChange={event => setManualPalette(event.target.checked)} />手动选择 Fig.5 配色</label>{manualPalette && <select aria-label="Fig.5 配色" value={palette} disabled={status?.palette_id != null || phase === "loading" || phase === "rendering"} onChange={event => setPalette(Number(event.target.value))}>
-        {Array.from({ length: 12 }, (_, index) => <option key={index + 1} value={index + 1}>配色 {index + 1}</option>)}
-      </select>}</details>
-      {status?.palette_id != null && <span>{autoSelected ? "已自动选择配色" : "已固定配色"} {status.palette_id}</span>}
-      <button type="button" disabled={!path || phase === "loading" || phase === "rendering" || phase === "ready"} onClick={render}>生成结合图</button>
-      <button type="button" disabled={!path || phase === "loading"} onClick={() => loadExisting()}>查看已有图</button>
+      {status?.palette_id != null && <span>已固定配色 {status.palette_id}</span>}
     </div>
-    {phase === "idle" && <p>默认由后端自动随机选择配色；若此前已生成，请点击“查看已有图”。查询状态可能锁定配色。</p>}
+    {phase === "idle" && <p>准备查询真实结合图…</p>}
     {phase === "ready" && message && <p role="status">{message}</p>}
-    {(phase === "loading" || phase === "rendering") && <p role="status">{phase === "loading" ? "正在查询结合图…" : "正在渲染真实结合图…"}</p>}
-    {phase === "ready" && imageUrl && !imageFailed && <img className="binding-figure__image" src={imageUrl} alt={`真实蛋白质–配体结合图，配色 ${status?.palette_id ?? palette}`} onError={() => { setImageFailed(true); setMessage("图片加载失败，已切换至三维结构查看。"); }} />}
+    {(phase === "loading" || phase === "rendering") && <p role="status">正在生成真实结合图…</p>}
+    {phase === "ready" && imageUrl && !imageFailed && <img className="binding-figure__image" src={imageUrl} alt={`真实蛋白质–配体结合图，配色 ${status?.palette_id ?? "未知"}`} onError={() => { setImageFailed(true); setMessage("图片加载失败，已切换至三维结构查看。"); }} />}
     {(phase === "failed" || phase === "unavailable" || imageFailed || (phase === "ready" && !imageUrl)) && <>
       <p role="status">{message || "真实结合图不可用，显示原有三维结构。"}</p>
       {molBlock ? <MoleculeViewer3D molBlock={molBlock} proteinPdb={proteinPdb} label="蛋白–配体三维结构共显（非认证对接位姿）" /> : <p>3D 结构暂不可用</p>}

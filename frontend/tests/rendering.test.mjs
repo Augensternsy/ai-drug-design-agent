@@ -31,8 +31,7 @@ test("binding figure uses selected palette before status polling and handles loc
   const { BindingFigure } = await server.ssrLoadModule('/src/components/BindingFigure.tsx');
   const html = renderToStaticMarkup(React.createElement(BindingFigure, { taskId: 'demo-esr', candidateIndex: 0 }));
   assert.equal((html.match(/<option/g) ?? []).length, 0);
-  assert.match(html, /高级设置 \/ 手动配色/);
-  assert.match(html, /disabled=""[^>]*>生成结合图/);
+  assert.doesNotMatch(html, /生成结合图|查看已有图/);
   const notFound = async () => new Response(JSON.stringify({ detail: 'Unknown task' }), { status: 404 });
   await assert.rejects(getFigure('https://example.test', path, notFound), error => error instanceof ApiError && error.status === 404);
   const disconnected = async () => { throw new TypeError('offline'); };
