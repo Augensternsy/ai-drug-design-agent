@@ -22,12 +22,16 @@ test("binding figure uses selected palette before status polling and handles loc
   assert.equal((await getFigure('https://example.test', path, mock)).state, 'ready');
   assert.deepEqual(calls.map(call => call.method), ['POST', 'GET']);
   assert.deepEqual(JSON.parse(calls[0].body), { palette_id: 7 });
+  calls.length = 0;
+  assert.equal((await renderFigure('https://example.test', path, undefined, mock)).state, 'rendering');
+  assert.deepEqual(JSON.parse(calls[0].body), {});
   const locked = async () => new Response(JSON.stringify({ detail: 'Palette locked' }), { status: 409 });
   await assert.rejects(renderFigure('https://example.test', path, 8, locked), error => error instanceof ApiError && error.status === 409);
   assert.throws(() => figurePath('demo-esr', 0));
   const { BindingFigure } = await server.ssrLoadModule('/src/components/BindingFigure.tsx');
   const html = renderToStaticMarkup(React.createElement(BindingFigure, { taskId: 'demo-esr', candidateIndex: 0 }));
-  assert.equal((html.match(/<option/g) ?? []).length, 12);
+  assert.equal((html.match(/<option/g) ?? []).length, 0);
+  assert.match(html, /高级设置 \/ 手动配色/);
   assert.match(html, /disabled=""[^>]*>生成结合图/);
   const notFound = async () => new Response(JSON.stringify({ detail: 'Unknown task' }), { status: 404 });
   await assert.rejects(getFigure('https://example.test', path, notFound), error => error instanceof ApiError && error.status === 404);

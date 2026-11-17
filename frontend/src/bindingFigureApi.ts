@@ -20,9 +20,9 @@ export function getFigure(base: string, path: string, fetchImpl: typeof fetch = 
   return requestJson<FigureStatus>(base, path, {}, 30_000, fetchImpl);
 }
 
-export function renderFigure(base: string, path: string, paletteId: number, fetchImpl: typeof fetch = fetch) {
-  if (!Number.isInteger(paletteId) || paletteId < 1 || paletteId > 12) throw new Error("配色编号须为 1–12");
+export function renderFigure(base: string, path: string, paletteId?: number, fetchImpl: typeof fetch = fetch) {
+  if (paletteId !== undefined && (!Number.isInteger(paletteId) || paletteId < 1 || paletteId > 12)) throw new Error("配色编号须为 1–12");
   return requestJson<FigureStatus>(base, `${path}/render`, {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ palette_id: paletteId }),
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(paletteId === undefined ? {} : { palette_id: paletteId }),
   }, 30_000, fetchImpl);
 }

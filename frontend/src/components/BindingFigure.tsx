@@ -8,6 +8,8 @@ export function BindingFigure({ taskId, candidateIndex, molBlock, proteinPdb }: 
   taskId?: string; candidateIndex?: number; molBlock?: string | null; proteinPdb?: string | null;
 }) {
   const [palette, setPalette] = useState(1);
+  const [manualPalette, setManualPalette] = useState(false);
+  const [autoSelected, setAutoSelected] = useState(false);
   const [status, setStatus] = useState<FigureStatus | null>(null);
   const [phase, setPhase] = useState<"idle" | "loading" | "ready" | "rendering" | "unavailable" | "failed">("idle");
   const [message, setMessage] = useState("");
@@ -18,7 +20,7 @@ export function BindingFigure({ taskId, candidateIndex, molBlock, proteinPdb }: 
   const knownReadyKey = path ? `drug-design-agent:binding-ready:${path}` : null;
 
   useEffect(() => {
-    setStatus(null); setPhase("idle"); setMessage(""); setImageFailed(false); busy.current = false;
+    setStatus(null); setPhase("idle"); setMessage(""); setImageFailed(false); setManualPalette(false); setAutoSelected(false); busy.current = false;
   }, [taskId, candidateIndex]);
 
   useEffect(() => {
@@ -77,7 +79,8 @@ export function BindingFigure({ taskId, candidateIndex, molBlock, proteinPdb }: 
     if (!path || busy.current || phase === "rendering" || phase === "ready") return;
     busy.current = true; setPhase("loading"); setMessage("");
     try {
-      const next = await renderFigure(API_BASE_URL, path, palette);
+      const next = await renderFigure(API_BASE_URL, path, manualPalette ? palette : undefined);
+      setAutoSelected(!manualPalette);
       setStatus(next);
       if (next.palette_id != null) setPalette(next.palette_id);
       setPhase(next.state === "queued" || next.state === "pending" || next.state === "rendering" ? "rendering" : next.state);
@@ -97,14 +100,14 @@ export function BindingFigure({ taskId, candidateIndex, molBlock, proteinPdb }: 
     ? new URL(status.image_url, `${API_BASE_URL}/`).href : null;
   return <div className="binding-figure">
     <div className="binding-figure__controls">
-      <label>Fig.5 配色 <select value={palette} disabled={status?.palette_id != null || phase === "loading" || phase === "rendering"} onChange={event => setPalette(Number(event.target.value))}>
+      <details className="binding-figure__advanced"><summary>高级设置 / 手动配色</summary><label><input type="checkbox" checked={manualPalette} disabled={status?.palette_id != null || phase === "loading" || phase === "rendering"} onChange={event => setManualPalette(event.target.checked)} />手动选择 Fig.5 配色</label>{manualPalette && <select aria-label="Fig.5 配色" value={palette} disabled={status?.palette_id != null || phase === "loading" || phase === "rendering"} onChange={event => setPalette(Number(event.target.value))}>
         {Array.from({ length: 12 }, (_, index) => <option key={index + 1} value={index + 1}>配色 {index + 1}</option>)}
-      </select></label>
-      {status?.palette_id != null && <span>已固定配色 {status.palette_id}</span>}
+      </select>}</details>
+      {status?.palette_id != null && <span>{autoSelected ? "已自动选择配色" : "已固定配色"} {status.palette_id}</span>}
       <button type="button" disabled={!path || phase === "loading" || phase === "rendering" || phase === "ready"} onClick={render}>生成结合图</button>
       <button type="button" disabled={!path || phase === "loading"} onClick={() => loadExisting()}>查看已有图</button>
     </div>
-    {phase === "idle" && <p>选择配色后可生成；若此前已生成，请点击“查看已有图”。查询状态可能锁定配色。</p>}
+    {phase === "idle" && <p>默认由后端自动随机选择配色；若此前已生成，请点击“查看已有图”。查询状态可能锁定配色。</p>}
     {phase === "ready" && message && <p role="status">{message}</p>}
     {(phase === "loading" || phase === "rendering") && <p role="status">{phase === "loading" ? "正在查询结合图…" : "正在渲染真实结合图…"}</p>}
     {phase === "ready" && imageUrl && !imageFailed && <img className="binding-figure__image" src={imageUrl} alt={`真实蛋白质–配体结合图，配色 ${status?.palette_id ?? palette}`} onError={() => { setImageFailed(true); setMessage("图片加载失败，已切换至三维结构查看。"); }} />}
