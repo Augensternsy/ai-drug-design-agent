@@ -2,12 +2,13 @@ import { useState } from "react";
 import type { Candidate } from "../types";
 import { downloadCandidateSdf } from "../utils/exports";
 import { MoleculeViewer3D } from "./MoleculeViewer3D";
+import { BindingFigure } from "./BindingFigure";
 
 function metric(value: number | null, digits = 3) {
   return value === null ? "N/A" : value.toFixed(digits);
 }
 
-export function MoleculeCard({ candidate, proteinPdb }: { candidate: Candidate; proteinPdb?: string | null }) {
+export function MoleculeCard({ candidate, proteinPdb, taskId }: { candidate: Candidate; proteinPdb?: string | null; taskId?: string }) {
   const [viewMode, setViewMode] = useState<"2d" | "3d" | "complex">("2d");
   const [copied, setCopied] = useState(false);
   const [zoom, setZoom] = useState(1);
@@ -36,7 +37,7 @@ export function MoleculeCard({ candidate, proteinPdb }: { candidate: Candidate; 
         <button type="button" className={viewMode === "3d" ? "active" : ""} onClick={() => setViewMode("3d")}>查看 3D</button>
         <button type="button" className={viewMode === "complex" ? "active" : ""} onClick={() => setViewMode("complex")}>结合模式</button>
       </div>
-      <div className="molecule-canvas">
+      <div className={`molecule-canvas${viewMode === "complex" ? " complex" : ""}`}>
         {!candidate.valid && <p role="alert">RDKit Invalid / 未确认有效：不渲染该候选结构</p>}
         {candidate.valid && viewMode === "2d" && (svgUrl ? <>
           <div className="molecule-2d-viewport"><img src={svgUrl} alt={`候选分子 ${candidate.rank} 的二维结构`} style={{ transform: `scale(${zoom})` }} /></div>
@@ -49,12 +50,10 @@ export function MoleculeCard({ candidate, proteinPdb }: { candidate: Candidate; 
         {candidate.valid && viewMode === "3d" && (candidate.mol_block || candidate.sdf
           ? <MoleculeViewer3D molBlock={candidate.mol_block || candidate.sdf!} label={`候选分子 ${candidate.rank} 的三维构象`} />
           : <p>3D 结构暂不可用</p>)}
-        {candidate.valid && viewMode === "complex" && (candidate.mol_block || candidate.sdf
-          ? <MoleculeViewer3D molBlock={candidate.mol_block || candidate.sdf!} proteinPdb={proteinPdb} label={proteinPdb ? `候选分子 ${candidate.rank} 的蛋白-配体结合模式` : `候选分子 ${candidate.rank} 的三维构象`} />
-          : <p>3D 结构暂不可用</p>)}
+        {candidate.valid && <div hidden={viewMode !== "complex"} className="binding-figure-host"><BindingFigure taskId={taskId} candidateIndex={candidate.candidate_index} molBlock={candidate.mol_block || candidate.sdf} proteinPdb={proteinPdb} /></div>}
       </div>
 
-      {viewMode === "complex" && <p>结构共显；配体构象不等同于已认证的 Vina 对接位姿。</p>}
+      {viewMode === "complex" && <p>真实 PNG 来源于后端归档的认证对接位姿；回退三维结构仅为构象共显。</p>}
       <dl className="metric-grid">
         <div><dt>QED</dt><dd>{metric(candidate.qed)}</dd></div>
         <div><dt>SA</dt><dd>{metric(candidate.sa)}</dd></div>

@@ -1,4 +1,5 @@
 export type Candidate = {
+  candidate_index?: number;
   rank: number;
   smiles: string;
   valid: boolean;

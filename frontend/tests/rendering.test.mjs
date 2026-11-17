@@ -7,6 +7,37 @@ import { createServer } from "vite";
 const server = await createServer({ server: { middlewareMode: true }, appType: "custom", logLevel: "silent" });
 after(async () => server.close());
 
+test("binding figure uses selected palette before status polling and handles locked palette", async () => {
+  const { figurePath, getFigure, renderFigure } = await server.ssrLoadModule('/src/bindingFigureApi.ts');
+  const { ApiError } = await server.ssrLoadModule('/src/httpClient.ts');
+  const path = figurePath('75b670c8-faad-4c17-803c-cc17c9f8158f', 0);
+  const calls = [];
+  const mock = async (url, options) => {
+    calls.push({ url, method: options.method ?? 'GET', body: options.body });
+    return new Response(JSON.stringify({ task_id: '75b670c8-faad-4c17-803c-cc17c9f8158f', candidate_index: 0,
+      state: calls.length === 1 ? 'rendering' : 'ready', palette_id: 7, image_url: calls.length === 1 ? null : `${path}/image`, message: null }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+  assert.equal((await renderFigure('https://example.test', path, 7, mock)).state, 'rendering');
+  assert.equal((await getFigure('https://example.test', path, mock)).state, 'ready');
+  assert.deepEqual(calls.map(call => call.method), ['POST', 'GET']);
+  assert.deepEqual(JSON.parse(calls[0].body), { palette_id: 7 });
+  const locked = async () => new Response(JSON.stringify({ detail: 'Palette locked' }), { status: 409 });
+  await assert.rejects(renderFigure('https://example.test', path, 8, locked), error => error instanceof ApiError && error.status === 409);
+  assert.throws(() => figurePath('demo-esr', 0));
+  const { BindingFigure } = await server.ssrLoadModule('/src/components/BindingFigure.tsx');
+  const html = renderToStaticMarkup(React.createElement(BindingFigure, { taskId: 'demo-esr', candidateIndex: 0 }));
+  assert.equal((html.match(/<option/g) ?? []).length, 12);
+  assert.match(html, /disabled=""[^>]*>生成结合图/);
+  const notFound = async () => new Response(JSON.stringify({ detail: 'Unknown task' }), { status: 404 });
+  await assert.rejects(getFigure('https://example.test', path, notFound), error => error instanceof ApiError && error.status === 404);
+  const disconnected = async () => { throw new TypeError('offline'); };
+  await assert.rejects(getFigure('https://example.test', path, disconnected), /网络连接失败/);
+  const failed = async () => new Response(JSON.stringify({ task_id: '75b670c8-faad-4c17-803c-cc17c9f8158f', candidate_index: 0,
+    state: 'failed', palette_id: 7, image_url: null, message: 'Rendering failed' }), { status: 200 });
+  assert.equal((await getFigure('https://example.test', path, failed)).state, 'failed');
+});
+
 test("invalid candidates never render SVG or 3D data", async () => {
   const { MoleculeCard } = await server.ssrLoadModule('/src/components/MoleculeCard.tsx');
   const html = renderToStaticMarkup(React.createElement(MoleculeCard, { candidate: {

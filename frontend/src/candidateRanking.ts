@@ -29,7 +29,7 @@ export function rankCandidates(candidates: Candidate[]): Candidate[] {
 
       return left.index - right.index;
     })
-    .map(({ candidate }, index) => ({ ...candidate, rank: index + 1 }));
+    .map(({ candidate, index: candidate_index }, index) => ({ ...candidate, candidate_index, rank: index + 1 }));
 }
 
 export function buildAnalysisReport(

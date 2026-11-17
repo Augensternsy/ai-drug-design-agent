@@ -406,7 +406,7 @@ function App() {
         <section className="results-section">
           <div className="results-header"><div><p className="eyebrow">Ranked candidates</p><h2>候选分子</h2></div><div className="result-actions"><span>{rankedCandidates.length} molecules</span>{rankedTask && rankedCandidates.length ? <><button type="button" onClick={() => exportTaskCsv(rankedTask)}>导出 CSV</button><button type="button" onClick={() => exportTaskJson(rankedTask)}>导出 JSON</button><button type="button" onClick={() => downloadAllSdf(rankedTask)} disabled={!hasDownloadableSdf} title={hasDownloadableSdf ? "合并下载所有可用的 SDF 结构" : "当前结果没有可下载的 3D 结构"}>下载全部 SDF</button></> : null}</div></div>
           {analysisReport && <AnalysisReportCard report={analysisReport} />}
-          {rankedCandidates.length ? <div className="molecule-grid">{rankedCandidates.map((candidate) => <MoleculeCard candidate={candidate} proteinPdb={task?.protein_pdb} key={`${candidate.rank}-${candidate.smiles}`} />)}</div> : loading && task ? <TaskLoadingCard task={task} /> : <div className="results-empty"><span>∿</span><p>{task?.status === "completed" ? "任务已结束，没有返回候选分子。" : task?.status === "failed" ? "任务失败，没有可展示的候选。" : "任务完成后，候选分子将在这里以 2D/3D 卡片展示。"}</p></div>}
+          {rankedCandidates.length ? <div className="molecule-grid">{rankedCandidates.map((candidate) => <MoleculeCard candidate={candidate} taskId={task?.task_id} proteinPdb={task?.protein_pdb} key={`${candidate.rank}-${candidate.smiles}`} />)}</div> : loading && task ? <TaskLoadingCard task={task} /> : <div className="results-empty"><span>∿</span><p>{task?.status === "completed" ? "任务已结束，没有返回候选分子。" : task?.status === "failed" ? "任务失败，没有可展示的候选。" : "任务完成后，候选分子将在这里以 2D/3D 卡片展示。"}</p></div>}
         </section>
       </main>
 
