@@ -3,6 +3,7 @@ import { API_BASE_URL } from "../api";
 import { getFigure, hasVerifiedPoseReadyForRendering, isMissingVerifiedVinaPose, renderFigure, type FigureStatus } from "../bindingFigureApi";
 import { ApiError } from "../httpClient";
 import { MoleculeViewer3D } from "./MoleculeViewer3D";
+import { generatedRgbForPalette, NATIVE_RGB } from "../fig5Palette";
 
 export function BindingFigure({ taskId, candidateIndex, requestedPalette, molBlock, proteinPdb }: {
   taskId?: string; candidateIndex?: number; requestedPalette?: number; molBlock?: string | null; proteinPdb?: string | null;
@@ -80,9 +81,10 @@ export function BindingFigure({ taskId, candidateIndex, requestedPalette, molBlo
   const imageUrl = status?.image_url && API_BASE_URL
     ? new URL(status.image_url, `${API_BASE_URL}/`).href : null;
   const missingPose = isMissingVerifiedVinaPose(status);
+  const generatedColor = generatedRgbForPalette(status?.palette_id ?? null);
   return <div className="binding-figure">
     {(phase === "idle" || phase === "loading" || phase === "rendering") && <p role="status">正在绘制蛋白质–配体结合图…</p>}
-    {phase === "ready" && imageUrl && !imageFailed && <><img className="binding-figure__image" src={imageUrl} alt={`真实蛋白质–配体结合图，配色 ${status?.palette_id ?? "未知"}`} onError={() => { setImageFailed(true); setMessage("图片加载失败，已切换至3D查看。"); }} /><small>基于 Vina 对接位姿生成 · 配色 {status?.palette_id ?? "未知"}</small></>}
+    {phase === "ready" && imageUrl && !imageFailed && <><img className="binding-figure__image" src={imageUrl} alt={`真实蛋白质–配体结合图，配色 ${status?.palette_id ?? "未知"}`} onError={() => { setImageFailed(true); setMessage("图片加载失败，已切换至3D查看。"); }} /><small>基于 Vina 对接位姿生成 · 配色 {status?.palette_id ?? "未知"}</small>{generatedColor && <div className="binding-figure__legend" aria-label="结合图颜色图例">{/* Current renderer only emits ready PNGs with a verified reference ligand; honor an explicit future false flag. */}{status?.reference_ligand_present !== false && <span><i style={{ backgroundColor: NATIVE_RGB }} aria-hidden="true" />Native</span>}<span><i style={{ backgroundColor: generatedColor }} aria-hidden="true" />Generated</span></div>}</>}
     {(phase === "failed" || phase === "unavailable" || imageFailed || (phase === "ready" && !imageUrl)) && <>
       <p role="status">{imageFailed ? "图片加载失败，已切换至3D查看。" : phase === "unavailable" || missingPose ? "缺少有效对接位姿，无法展示真实结合图。Vina评分仍可正常查看。" : /rendering failed/i.test(message) ? "结合图绘制失败。" : message || "结合图绘制失败，请稍后重新查看。"}</p>
       {molBlock ? <MoleculeViewer3D molBlock={molBlock} proteinPdb={proteinPdb} label="蛋白–配体三维结构共显（非认证对接位姿）" /> : <p>3D 结构暂不可用</p>}

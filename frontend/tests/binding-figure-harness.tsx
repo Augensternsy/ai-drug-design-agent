@@ -24,7 +24,8 @@ window.fetch = async (input, init) => {
   const state = scenario === "pose-unavailable" ? "unavailable" : scenario === "pose-failed" || scenario === "render-failed" ? "failed" : method === "POST" ? "rendering" : (++gets < 2 && scenario === "success") ? "rendering" : "ready";
   return new Response(JSON.stringify({ task_id: taskId, candidate_index: 0, state,
     palette_id: scenario === "locked" ? 1 : 7, image_url: state === "ready" ? scenario === "broken-image" ? "/missing-binding-figure.png" : png : null,
-    message: scenario === "pose-unavailable" || scenario === "pose-failed" ? "No verified Vina pose for this candidate" : state === "failed" ? "Rendering failed" : null }), { status: 200, headers: { "Content-Type": "application/json" } });
+    message: scenario === "pose-unavailable" || scenario === "pose-failed" ? "No verified Vina pose for this candidate" : state === "failed" ? "Rendering failed" : null,
+    reference_ligand_present: scenario === "without-native" ? false : true }), { status: 200, headers: { "Content-Type": "application/json" } });
 };
 
 document.body.style.padding = "24px";

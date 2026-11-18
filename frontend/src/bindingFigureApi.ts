@@ -7,6 +7,7 @@ export type FigureStatus = {
   image_url: string | null;
   palette_id: number | null;
   message: string | null;
+  reference_ligand_present?: boolean | null;
 };
 
 export function hasVerifiedPoseReadyForRendering(status: FigureStatus): boolean {

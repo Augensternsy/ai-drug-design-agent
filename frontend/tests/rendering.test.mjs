@@ -8,6 +8,13 @@ const server = await createServer({ server: { middlewareMode: true }, appType: "
 after(async () => server.close());
 
 test("binding figure uses selected palette before status polling and handles locked palette", async () => {
+  const { generatedRgbForPalette, NATIVE_RGB } = await server.ssrLoadModule('/src/fig5Palette.ts');
+  assert.equal(NATIVE_RGB, 'rgb(10% 78% 15%)');
+  assert.deepEqual(Array.from({ length: 12 }, (_, i) => generatedRgbForPalette(i + 1)),
+    ['rgb(0% 72% 90%)', 'rgb(22% 32% 78%)', 'rgb(96% 46% 6%)', 'rgb(62% 27% 78%)',
+     'rgb(0% 72% 90%)', 'rgb(22% 32% 78%)', 'rgb(96% 46% 6%)', 'rgb(62% 27% 78%)',
+     'rgb(0% 72% 90%)', 'rgb(22% 32% 78%)', 'rgb(96% 46% 6%)', 'rgb(62% 27% 78%)']);
+  assert.equal(generatedRgbForPalette(13), null);
   const { figurePath, getFigure, renderFigure, hasVerifiedPoseReadyForRendering, isMissingVerifiedVinaPose } = await server.ssrLoadModule('/src/bindingFigureApi.ts');
   assert.equal(hasVerifiedPoseReadyForRendering({ state: 'unavailable', message: 'Verified pose available; request rendering' }), true);
   assert.equal(hasVerifiedPoseReadyForRendering({ state: 'unavailable', message: 'No verified pose for this candidate', palette_id: 1 }), false);
