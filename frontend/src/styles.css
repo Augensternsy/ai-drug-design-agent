@@ -349,6 +349,10 @@ footer { margin: 0 clamp(22px, 5vw, 76px); padding: 24px 0 34px; display: flex; 
 .binding-figure__legend i { width: 8px; height: 8px; flex: none; border: 1px solid rgba(0,0,0,.12); }
 .binding-figure-host { width: 100%; }
 .binding-figure__image { display: block; max-width: 100%; max-height: 520px; width: auto; height: auto; margin: auto; object-fit: contain; }
+.docking-notice { margin: 8px 0 14px; padding: 10px 12px; border: 1px solid; border-radius: 6px; font-size: 12px; line-height: 1.5; }
+.docking-notice.disabled { background: #fff4e7; border-color: #edc99d; color: #754812; }
+.docking-notice.enabled { background: #eaf6ed; border-color: #a8d5b1; color: #245b33; }
+.docking-notice p { margin: 4px 0 0; }
 .molecule-2d-viewport { position: absolute; inset: 0; display: grid; place-items: center; overflow: hidden; background: #fff; }
 .molecule-2d-viewport img { position: absolute; inset: 0; min-width: 0; min-height: 0; width: 100%; height: 100%; object-fit: contain; }
 .molecule-zoom-controls { position: absolute; z-index: 2; right: 10px; bottom: 10px; display: flex; overflow: hidden; border: 1px solid var(--line); border-radius: 3px; background: rgba(255,255,255,.94); box-shadow: 0 5px 16px rgba(31,48,39,.08); }

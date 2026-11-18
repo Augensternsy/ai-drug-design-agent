@@ -378,6 +378,7 @@ function App() {
             </div>
 
             <label className="toggle-row" htmlFor="run-docking"><span><strong>AutoDock Vina</strong><small>默认关闭；启用会增加 GPU 占用与任务耗时</small></span><input id="run-docking" type="checkbox" checked={runDocking} onChange={(event) => setRunDocking(event.target.checked)} disabled={running} /><i aria-hidden="true" /></label>
+            <div className={`docking-notice ${runDocking ? "enabled" : "disabled"}`} role="status"><strong>{runDocking ? "已启用分子对接" : "提示：未启用分子对接"}</strong><p>{runDocking ? "任务完成后将执行 AutoDock Vina。成功获得并保存有效对接位姿后，即可查看真实蛋白质–配体结合模式。" : "本次任务将跳过 AutoDock Vina，因此不会生成 Vina 评分和真实对接位姿，也无法展示真实蛋白质–配体结合模式。你仍然可以正常查看分子的 2D、3D 结构及其他理化性质。"}</p></div>
             <button className="submit-button" type="submit" disabled={running || cooldown > 0 || backendMode === "checking"}>{running ? <><span className="spinner" />任务执行中</> : cooldown > 0 ? <>冷却中 <span>{cooldown}s</span></> : backendMode === "checking" ? <>检查后端中 <span className="spinner" /></> : backendMode === "demo" ? <>查看预计算结果 <span>→</span></> : <>检查并生成 <span>→</span></>}</button>
             <p className="submit-hint">提交前会再次确认；任务开始后按钮将锁定。</p>
             {backendMode === "demo" && <p className="config-warning">Demo Mode 不会请求后端；所有结果均明确标注为预计算内容。</p>}
