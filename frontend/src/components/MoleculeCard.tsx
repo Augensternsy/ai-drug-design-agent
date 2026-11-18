@@ -10,8 +10,6 @@ function metric(value: number | null, digits = 3) {
 
 export function MoleculeCard({ candidate, proteinPdb, taskId }: { candidate: Candidate; proteinPdb?: string | null; taskId?: string }) {
   const [viewMode, setViewMode] = useState<"2d" | "3d" | "complex">("2d");
-  const [manualPalette, setManualPalette] = useState(false);
-  const [palette, setPalette] = useState(1);
   const [openedBinding, setOpenedBinding] = useState(false);
   const [copied, setCopied] = useState(false);
   const [zoom, setZoom] = useState(1);
@@ -39,7 +37,6 @@ export function MoleculeCard({ candidate, proteinPdb, taskId }: { candidate: Can
         <button type="button" className={viewMode === "2d" ? "active" : ""} onClick={() => setViewMode("2d")}>查看 2D</button>
         <button type="button" className={viewMode === "3d" ? "active" : ""} onClick={() => setViewMode("3d")}>查看 3D</button>
         <button type="button" className={viewMode === "complex" ? "active" : ""} onClick={() => { setOpenedBinding(true); setViewMode("complex"); }}>结合模式</button>
-        {!openedBinding && <details className="binding-figure__advanced"><summary>高级设置 / 手动配色</summary><label><input type="checkbox" checked={manualPalette} onChange={event => setManualPalette(event.target.checked)} />手动选择 Fig.5 配色</label>{manualPalette && <select aria-label="Fig.5 配色" value={palette} onChange={event => setPalette(Number(event.target.value))}>{Array.from({ length: 12 }, (_, index) => <option key={index + 1} value={index + 1}>配色 {index + 1}</option>)}</select>}</details>}
       </div>
       <div className={`molecule-canvas${viewMode === "complex" ? " complex" : ""}`}>
         {!candidate.valid && <p role="alert">RDKit Invalid / 未确认有效：不渲染该候选结构</p>}
@@ -54,10 +51,9 @@ export function MoleculeCard({ candidate, proteinPdb, taskId }: { candidate: Can
         {candidate.valid && viewMode === "3d" && (candidate.mol_block || candidate.sdf
           ? <MoleculeViewer3D molBlock={candidate.mol_block || candidate.sdf!} label={`候选分子 ${candidate.rank} 的三维构象`} />
           : <p>3D 结构暂不可用</p>)}
-        {candidate.valid && openedBinding && <div hidden={viewMode !== "complex"} className="binding-figure-host"><BindingFigure taskId={taskId} candidateIndex={candidate.candidate_index} requestedPalette={manualPalette ? palette : undefined} molBlock={candidate.mol_block || candidate.sdf} proteinPdb={proteinPdb} /></div>}
+        {candidate.valid && openedBinding && <div hidden={viewMode !== "complex"} className="binding-figure-host"><BindingFigure taskId={taskId} candidateIndex={candidate.candidate_index} molBlock={candidate.mol_block || candidate.sdf} proteinPdb={proteinPdb} /></div>}
       </div>
 
-      {viewMode === "complex" && <p>真实 PNG 来源于后端归档的认证对接位姿；回退三维结构仅为构象共显。</p>}
       <dl className="metric-grid">
         <div><dt>QED</dt><dd>{metric(candidate.qed)}</dd></div>
         <div><dt>SA</dt><dd>{metric(candidate.sa)}</dd></div>
